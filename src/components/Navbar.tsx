@@ -52,11 +52,11 @@ const Navbar = () => {
             e.preventDefault();
             scrollToTop();
           }}
-          aria-label="Pulse Robot"
+          aria-label="StudyAIde"
         >
           <img 
             src="/logo.svg" 
-            alt="Pulse Robot Logo" 
+            alt="StudyAIde Logo" 
             className="h-7 sm:h-8" 
           />
         </a>
@@ -73,8 +73,8 @@ const Navbar = () => {
           >
             Home
           </a>
-          <a href="#features" className="nav-link">About</a>
-          <a href="#details" className="nav-link">Contact</a>
+          <a href="#features" className="nav-link">Features</a>
+          <a href="#testimonials" className="nav-link">Success Stories</a>
         </nav>
 
         {/* Mobile menu button - increased touch target */}
@@ -113,17 +113,17 @@ const Navbar = () => {
               document.body.style.overflow = '';
             }}
           >
-            About
+            Features
           </a>
           <a 
-            href="#details" 
+            href="#testimonials" 
             className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
             onClick={() => {
               setIsMenuOpen(false);
               document.body.style.overflow = '';
             }}
           >
-            Contact
+            Success Stories
           </a>
         </nav>
       </div>
