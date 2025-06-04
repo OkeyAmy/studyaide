@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface SignInFormProps {
   onSwitchToSignUp: () => void;
@@ -13,11 +16,31 @@ const SignInForm = ({ onSwitchToSignUp }: SignInFormProps) => {
     email: "",
     password: ""
   });
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign in logic here
-    console.log("Sign in with:", formData);
+    setLoading(true);
+    
+    const { error } = await signIn(formData.email, formData.password);
+    
+    if (error) {
+      toast({
+        title: "Error signing in",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "You've been signed in successfully."
+      });
+      navigate('/dashboard');
+    }
+    
+    setLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,37 +78,9 @@ const SignInForm = ({ onSwitchToSignUp }: SignInFormProps) => {
         />
       </div>
       
-      <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" className="rounded" />
-          <span className="text-gray-600">Remember me</span>
-        </label>
-        <button type="button" className="text-pulse-500 hover:text-pulse-600">
-          Forgot password?
-        </button>
-      </div>
-      
-      <Button type="submit" className="w-full button-primary">
-        Sign In
+      <Button type="submit" className="w-full button-primary" disabled={loading}>
+        {loading ? "Signing in..." : "Sign In"}
       </Button>
-      
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <Button type="button" variant="outline" className="w-full">
-          Google
-        </Button>
-        <Button type="button" variant="outline" className="w-full">
-          Microsoft
-        </Button>
-      </div>
       
       <div className="text-center text-sm text-gray-600">
         Don't have an account?{" "}

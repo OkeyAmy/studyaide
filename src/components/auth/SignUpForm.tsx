@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/components/ui/use-toast";
 
 interface SignUpFormProps {
   onSwitchToSignIn: () => void;
@@ -15,11 +17,39 @@ const SignUpForm = ({ onSwitchToSignIn }: SignUpFormProps) => {
     password: "",
     confirmPassword: ""
   });
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign up logic here
-    console.log("Sign up with:", formData);
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    const { error } = await signUp(formData.email, formData.password, formData.name);
+    
+    if (error) {
+      toast({
+        title: "Error creating account",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account."
+      });
+    }
+    
+    setLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,41 +113,9 @@ const SignUpForm = ({ onSwitchToSignIn }: SignUpFormProps) => {
         />
       </div>
       
-      <div className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="rounded mt-1" required />
-        <span className="text-gray-600">
-          I agree to the{" "}
-          <a href="#" className="text-pulse-500 hover:text-pulse-600">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="text-pulse-500 hover:text-pulse-600">
-            Privacy Policy
-          </a>
-        </span>
-      </div>
-      
-      <Button type="submit" className="w-full button-primary">
-        Create Account
+      <Button type="submit" className="w-full button-primary" disabled={loading}>
+        {loading ? "Creating Account..." : "Create Account"}
       </Button>
-      
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <Button type="button" variant="outline" className="w-full">
-          Google
-        </Button>
-        <Button type="button" variant="outline" className="w-full">
-          Microsoft
-        </Button>
-      </div>
       
       <div className="text-center text-sm text-gray-600">
         Already have an account?{" "}

@@ -8,7 +8,6 @@ import DetailsSection from "@/components/DetailsSection";
 import ImageShowcaseSection from "@/components/ImageShowcaseSection";
 import Features from "@/components/Features";
 import Testimonials from "@/components/Testimonials";
-import Newsletter from "@/components/Newsletter";
 import PoweredByAI from "@/components/PoweredByAI";
 import AuthCTA from "@/components/AuthCTA";
 import Footer from "@/components/Footer";
@@ -70,7 +69,6 @@ const Index = () => {
         <ImageShowcaseSection />
         <Features />
         <Testimonials />
-        <Newsletter />
         <PoweredByAI />
         <AuthCTA />
       </main>

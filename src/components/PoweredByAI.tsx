@@ -10,7 +10,6 @@ const PoweredByAI = () => {
             backgroundImage: "url('/background-section3.png')"
           }}>
             <div className="flex items-center text-white">
-              {/* ROBOT IMAGE USAGE: Logo replaced with StudyAIde branding */}
               <img src="/logo.svg" alt="StudyAIde Logo" className="h-5 sm:h-6 w-auto mr-3 invert" />
               <span className="text-white text-xl font-medium">StudyAIde</span>
             </div>
@@ -28,7 +27,6 @@ const PoweredByAI = () => {
               </h2>
             </div>
             
-            {/* White box at the bottom with overflow */}
             <div className="w-[120%] bg-white h-10 rounded-t-lg absolute left-[-10%] bottom-0"></div>
           </div>
         </div>
