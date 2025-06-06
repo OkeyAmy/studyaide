@@ -6,16 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
+import MaterialViewer from '@/components/material/MaterialViewer';
+import { mockMaterialData } from '@/data/mockApi';
+import { Material } from '@/types/api';
 
 const KnowledgeBase = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
 
   const stats = [
     {
       label: 'Total Items',
-      value: 127,
+      value: mockMaterialData.totalItems,
       icon: BookOpen,
       color: 'bg-blue-500',
       trend: '+12 this week',
@@ -23,23 +27,23 @@ const KnowledgeBase = () => {
     },
     {
       label: 'Study Materials',
-      value: 89,
+      value: mockMaterialData.materials.filter(m => m.status === 'active').length,
       icon: FileText,
       color: 'bg-green-500',
       trend: 'Active content',
       trendDirection: 'neutral' as const
     },
     {
-      label: 'Collections',
-      value: 12,
+      label: 'In Workflows',
+      value: mockMaterialData.materials.filter(m => m.usedInWorkflow).length,
       icon: Brain,
       color: 'bg-purple-500',
       trend: '3 new',
       trendDirection: 'up' as const
     },
     {
-      label: 'Tags Used',
-      value: 45,
+      label: 'Total Study Time',
+      value: `${mockMaterialData.materials.reduce((acc, m) => acc + m.studyTime, 0).toFixed(1)}h`,
       icon: Tag,
       color: 'bg-orange-500',
       trend: 'Organized',
@@ -47,64 +51,41 @@ const KnowledgeBase = () => {
     }
   ];
 
-  const recentContent = [
-    {
-      id: 1,
-      title: "Neural Network Fundamentals",
-      type: "summary",
-      subject: "Computer Science",
-      createdAt: "2 hours ago",
-      studyTime: "45 min",
-      icon: Brain,
-      tags: ["AI", "Machine Learning", "Deep Learning"],
-      preview: "Understanding the basic structure and function of artificial neural networks..."
-    },
-    {
-      id: 2,
-      title: "Calculus Integration Techniques",
-      type: "flashcards",
-      subject: "Mathematics",
-      createdAt: "1 day ago",
-      studyTime: "30 min",
-      icon: FileText,
-      tags: ["Calculus", "Integration", "Mathematics"],
-      preview: "Master various integration methods including substitution and integration by parts..."
-    },
-    {
-      id: 3,
-      title: "World War II Documentary",
-      type: "notes",
-      subject: "History",
-      createdAt: "2 days ago",
-      studyTime: "1.2 hours",
-      icon: Video,
-      tags: ["History", "WWII", "Documentary"],
-      preview: "Comprehensive analysis of the European theater and major battles..."
-    },
-    {
-      id: 4,
-      title: "Spanish Pronunciation Guide",
-      type: "audio",
-      subject: "Languages",
-      createdAt: "3 days ago",
-      studyTime: "25 min",
-      icon: Headphones,
-      tags: ["Spanish", "Pronunciation", "Language Learning"],
-      preview: "Audio guide covering Spanish phonetics and common pronunciation patterns..."
-    }
-  ];
-
   const filters = [
     { id: 'all', label: 'All Content' },
-    { id: 'summary', label: 'Summaries' },
-    { id: 'flashcards', label: 'Flashcards' },
-    { id: 'notes', label: 'Notes' },
-    { id: 'audio', label: 'Audio' }
+    { id: 'pdf', label: 'PDFs' },
+    { id: 'video', label: 'Videos' },
+    { id: 'audio', label: 'Audio' },
+    { id: 'docx', label: 'Documents' }
   ];
 
-  const filteredContent = recentContent.filter(item => 
-    selectedFilter === 'all' || item.type === selectedFilter
+  const filteredContent = mockMaterialData.materials.filter(item => 
+    (selectedFilter === 'all' || item.type === selectedFilter) &&
+    (searchQuery === '' || item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+     item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
+
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case 'video': return Video;
+      case 'audio': return Headphones;
+      case 'pdf':
+      case 'docx':
+      default: return FileText;
+    }
+  };
+
+  const handleViewMaterial = (material: Material) => {
+    setSelectedMaterial(material);
+  };
+
+  const handleBackToList = () => {
+    setSelectedMaterial(null);
+  };
+
+  if (selectedMaterial) {
+    return <MaterialViewer material={selectedMaterial} onBack={handleBackToList} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -167,37 +148,51 @@ const KnowledgeBase = () => {
             <SessionCard
               key={item.id}
               title={item.title}
-              description={item.preview}
-              icon={item.icon}
-              lastActivity={item.createdAt}
-              studyTime={item.studyTime}
-              onClick={() => setSelectedItem(selectedItem === item.id ? null : item.id)}
-              className={selectedItem === item.id ? 'ring-2 ring-pulse-500' : ''}
+              description={`${item.headings.length} topics • ${item.tags.length} tags`}
+              icon={getIconForType(item.type)}
+              lastActivity={new Date(item.uploadedAt).toLocaleDateString()}
+              studyTime={`${item.studyTime}h`}
+              onClick={() => setSelectedItem(selectedItem === parseInt(item.id.split('_')[1]) ? null : parseInt(item.id.split('_')[1]))}
+              className={selectedItem === parseInt(item.id.split('_')[1]) ? 'ring-2 ring-pulse-500' : ''}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{item.subject}</span>
                   <Badge variant="outline" className="capitalize">
                     {item.type}
+                  </Badge>
+                  <Badge className={item.usedInWorkflow ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                    {item.usedInWorkflow ? 'In Workflow' : 'Standalone'}
                   </Badge>
                 </div>
                 
                 <div className="flex flex-wrap gap-1">
-                  {item.tags.map((tag, index) => (
+                  {item.tags.slice(0, 3).map((tag, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
+                  {item.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{item.tags.length - 3}
+                    </Badge>
+                  )}
                 </div>
 
-                {selectedItem === item.id && (
+                {selectedItem === parseInt(item.id.split('_')[1]) && (
                   <div className="pt-3 border-t border-gray-100">
                     <div className="flex space-x-2">
-                      <Button size="sm" className="bg-pulse-500 hover:bg-pulse-600">
-                        Open Item
+                      <Button 
+                        size="sm" 
+                        className="bg-pulse-500 hover:bg-pulse-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewMaterial(item);
+                        }}
+                      >
+                        View Material
                       </Button>
                       <Button size="sm" variant="outline">
-                        Add to Collection
+                        Add to Workflow
                       </Button>
                     </div>
                   </div>

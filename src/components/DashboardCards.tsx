@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Mic, Brain, TrendingUp, Clock, Target, BookOpen } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { mockDashboardData } from '@/data/mockApi';
 
 const DashboardCards = () => {
   const navigate = useNavigate();
@@ -14,29 +15,29 @@ const DashboardCards = () => {
 
   const quickStats = [
     {
-      title: "Study Streak",
-      value: "7 days",
+      title: "Login Streak",
+      value: `${mockDashboardData.loginStreak} days`,
       icon: TrendingUp,
       color: "text-green-600",
       bgColor: "bg-green-100"
     },
     {
       title: "Time Saved",
-      value: "12.5h",
+      value: `${mockDashboardData.timeSavedHours}h`,
       icon: Clock,
       color: "text-blue-600",
       bgColor: "bg-blue-100"
     },
     {
       title: "Materials Processed",
-      value: "28",
+      value: mockDashboardData.materialsProcessed,
       icon: Target,
       color: "text-purple-600",
       bgColor: "bg-purple-100"
     },
     {
       title: "Active Workflows",
-      value: "5",
+      value: mockDashboardData.activeWorkflows,
       icon: BookOpen,
       color: "text-orange-600",
       bgColor: "bg-orange-100"
