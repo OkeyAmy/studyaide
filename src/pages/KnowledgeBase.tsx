@@ -1,11 +1,51 @@
 
 import React, { useState } from 'react';
-import { Search, Brain, FileText, Video, Headphones, Filter, Calendar, BookOpen, Tag } from 'lucide-react';
+import { Search, Brain, FileText, Video, Headphones, Filter, Calendar, BookOpen, Tag, MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import StatsGrid from '@/components/shared/StatsGrid';
+import SessionCard from '@/components/shared/SessionCard';
 
 const KnowledgeBase = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
+
+  const stats = [
+    {
+      label: 'Total Items',
+      value: 127,
+      icon: BookOpen,
+      color: 'bg-blue-500',
+      trend: '+12 this week',
+      trendDirection: 'up' as const
+    },
+    {
+      label: 'Study Materials',
+      value: 89,
+      icon: FileText,
+      color: 'bg-green-500',
+      trend: 'Active content',
+      trendDirection: 'neutral' as const
+    },
+    {
+      label: 'Collections',
+      value: 12,
+      icon: Brain,
+      color: 'bg-purple-500',
+      trend: '3 new',
+      trendDirection: 'up' as const
+    },
+    {
+      label: 'Tags Used',
+      value: 45,
+      icon: Tag,
+      color: 'bg-orange-500',
+      trend: 'Organized',
+      trendDirection: 'neutral' as const
+    }
+  ];
 
   const recentContent = [
     {
@@ -16,7 +56,6 @@ const KnowledgeBase = () => {
       createdAt: "2 hours ago",
       studyTime: "45 min",
       icon: Brain,
-      color: "bg-purple-100 text-purple-600",
       tags: ["AI", "Machine Learning", "Deep Learning"],
       preview: "Understanding the basic structure and function of artificial neural networks..."
     },
@@ -28,7 +67,6 @@ const KnowledgeBase = () => {
       createdAt: "1 day ago",
       studyTime: "30 min",
       icon: FileText,
-      color: "bg-blue-100 text-blue-600",
       tags: ["Calculus", "Integration", "Mathematics"],
       preview: "Master various integration methods including substitution and integration by parts..."
     },
@@ -40,7 +78,6 @@ const KnowledgeBase = () => {
       createdAt: "2 days ago",
       studyTime: "1.2 hours",
       icon: Video,
-      color: "bg-green-100 text-green-600",
       tags: ["History", "WWII", "Documentary"],
       preview: "Comprehensive analysis of the European theater and major battles..."
     },
@@ -52,18 +89,10 @@ const KnowledgeBase = () => {
       createdAt: "3 days ago",
       studyTime: "25 min",
       icon: Headphones,
-      color: "bg-orange-100 text-orange-600",
       tags: ["Spanish", "Pronunciation", "Language Learning"],
       preview: "Audio guide covering Spanish phonetics and common pronunciation patterns..."
     }
   ];
-
-  const knowledgeStats = {
-    totalItems: 127,
-    studyMaterials: 89,
-    collections: 12,
-    tagsUsed: 45
-  };
 
   const filters = [
     { id: 'all', label: 'All Content' },
@@ -72,10 +101,6 @@ const KnowledgeBase = () => {
     { id: 'notes', label: 'Notes' },
     { id: 'audio', label: 'Audio' }
   ];
-
-  const handleItemClick = (itemId: number) => {
-    setSelectedItem(selectedItem === itemId ? null : itemId);
-  };
 
   const filteredContent = recentContent.filter(item => 
     selectedFilter === 'all' || item.type === selectedFilter
@@ -89,6 +114,10 @@ const KnowledgeBase = () => {
           <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
           <p className="text-gray-600">Your personal learning repository</p>
         </div>
+        <Button variant="outline">
+          <MoreHorizontal className="h-4 w-4 mr-2" />
+          Manage Collections
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -96,12 +125,11 @@ const KnowledgeBase = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="relative flex-1 max-w-lg">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
+            <Input
               placeholder="Search your knowledge base..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pulse-500 focus:border-transparent"
+              className="pl-10"
             />
           </div>
           
@@ -123,112 +151,60 @@ const KnowledgeBase = () => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{knowledgeStats.totalItems}</p>
-            <p className="text-sm text-gray-600 mt-1">Total Items</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{knowledgeStats.studyMaterials}</p>
-            <p className="text-sm text-gray-600 mt-1">Study Materials</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{knowledgeStats.collections}</p>
-            <p className="text-sm text-gray-600 mt-1">Collections</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{knowledgeStats.tagsUsed}</p>
-            <p className="text-sm text-gray-600 mt-1">Tags Used</p>
-          </div>
-        </div>
-      </div>
+      <StatsGrid stats={stats} />
 
       {/* Content Items */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
             {selectedFilter === 'all' ? 'All Content' : filters.find(f => f.id === selectedFilter)?.label}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {filteredContent.length} items found
-          </p>
+          <p className="text-sm text-gray-600">{filteredContent.length} items found</p>
         </div>
 
-        <div className="divide-y divide-gray-200">
-          {filteredContent.map((item) => {
-            const Icon = item.icon;
-            const isSelected = selectedItem === item.id;
-            
-            return (
-              <div 
-                key={item.id} 
-                className={`p-6 transition-colors cursor-pointer ${
-                  isSelected ? 'bg-pulse-50 border-l-4 border-pulse-500' : 'hover:bg-gray-50'
-                }`}
-                onClick={() => handleItemClick(item.id)}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${item.color}`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-gray-900">{item.title}</h3>
-                      <span className="text-sm text-gray-500">{item.createdAt}</span>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
-                      <span className="inline-flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {item.subject}
-                      </span>
-                      <span>Study time: {item.studyTime}</span>
-                      <span className="capitalize bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                        {item.type}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 flex items-center space-x-2">
-                      {item.tags.map((tag, index) => (
-                        <span key={index} className="inline-flex items-center px-2 py-1 text-xs bg-pulse-100 text-pulse-700 rounded-full">
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    {isSelected && (
-                      <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-                        <p className="text-sm text-gray-700 mb-3">{item.preview}</p>
-                        <div className="flex space-x-2">
-                          <button className="px-3 py-1 bg-pulse-500 text-white rounded text-sm hover:bg-pulse-600 transition-colors">
-                            Open Item
-                          </button>
-                          <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors">
-                            Add to Collection
-                          </button>
-                          <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors">
-                            Export
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filteredContent.map((item) => (
+            <SessionCard
+              key={item.id}
+              title={item.title}
+              description={item.preview}
+              icon={item.icon}
+              lastActivity={item.createdAt}
+              studyTime={item.studyTime}
+              onClick={() => setSelectedItem(selectedItem === item.id ? null : item.id)}
+              className={selectedItem === item.id ? 'ring-2 ring-pulse-500' : ''}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">{item.subject}</span>
+                  <Badge variant="outline" className="capitalize">
+                    {item.type}
+                  </Badge>
                 </div>
+                
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+
+                {selectedItem === item.id && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="flex space-x-2">
+                      <Button size="sm" className="bg-pulse-500 hover:bg-pulse-600">
+                        Open Item
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        Add to Collection
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            );
-          })}
+            </SessionCard>
+          ))}
         </div>
       </div>
     </div>

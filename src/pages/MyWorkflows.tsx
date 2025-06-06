@@ -1,72 +1,93 @@
 
 import React, { useState } from 'react';
-import { Play, Clock, BookOpen, Plus, TrendingUp, Pause, CheckCircle } from 'lucide-react';
+import { Play, Clock, BookOpen, Plus, TrendingUp, Pause, CheckCircle, MoreHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import SessionCard from '@/components/shared/SessionCard';
+import StatsGrid from '@/components/shared/StatsGrid';
+import { Badge } from '@/components/ui/badge';
 
 const MyWorkflows = () => {
   const navigate = useNavigate();
   const [selectedWorkflow, setSelectedWorkflow] = useState<number | null>(null);
 
+  const stats = [
+    {
+      label: 'Total Workflows',
+      value: 12,
+      icon: BookOpen,
+      color: 'bg-blue-500',
+      trend: '+3 this week',
+      trendDirection: 'up' as const
+    },
+    {
+      label: 'Active Sessions',
+      value: 5,
+      icon: Play,
+      color: 'bg-green-500',
+      trend: '2 in progress',
+      trendDirection: 'neutral' as const
+    },
+    {
+      label: 'Completed',
+      value: 3,
+      icon: CheckCircle,
+      color: 'bg-purple-500',
+      trend: 'This week',
+      trendDirection: 'up' as const
+    },
+    {
+      label: 'Study Hours',
+      value: '24.5h',
+      icon: Clock,
+      color: 'bg-orange-500',
+      trend: '+5.2h vs last week',
+      trendDirection: 'up' as const
+    }
+  ];
+
   const recentWorkflows = [
     {
       id: 1,
       title: "Psychology 101 - Learning Theories",
+      description: "Exploring behaviorism, cognitivism, and constructivism theories",
       lastModified: "2 hours ago",
       progress: 75,
       studyMaterials: 12,
-      status: "active",
-      description: "Exploring behaviorism, cognitivism, and constructivism theories",
+      status: "active" as const,
       timeSpent: "4.5 hours",
       nextSession: "Cognitive Load Theory"
     },
     {
       id: 2,
       title: "Advanced Mathematics - Calculus",
+      description: "Differential and integral calculus fundamentals",
       lastModified: "1 day ago",
       progress: 45,
       studyMaterials: 8,
-      status: "paused",
-      description: "Differential and integral calculus fundamentals",
+      status: "paused" as const,
       timeSpent: "3.2 hours",
       nextSession: "Integration by Parts"
     },
     {
       id: 3,
       title: "History - World War II",
+      description: "European theater and Pacific campaigns analysis",
       lastModified: "3 days ago",
       progress: 90,
       studyMaterials: 15,
-      status: "completed",
-      description: "European theater and Pacific campaigns analysis",
+      status: "completed" as const,
       timeSpent: "7.8 hours",
       nextSession: "Final Review"
     }
   ];
 
-  const workflowStats = {
-    totalWorkflows: 12,
-    activeWorkflows: 5,
-    completedThisWeek: 3,
-    studyHoursThisWeek: 24.5
-  };
-
   const handleContinueWorkflow = (workflowId: number) => {
-    console.log(`Continuing workflow ${workflowId}`);
-    // Simulate navigation to study session
     navigate('/study-session', { state: { workflowId } });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Play className="h-4 w-4" />;
-      case 'paused':
-        return <Pause className="h-4 w-4" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
+  const handleCreateNew = () => {
+    navigate('/study-session');
   };
 
   return (
@@ -77,146 +98,55 @@ const MyWorkflows = () => {
           <h1 className="text-2xl font-bold text-gray-900">My Workflows</h1>
           <p className="text-gray-600">Manage and continue your learning journeys</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-pulse-500 text-white rounded-lg hover:bg-pulse-600 transition-colors">
+        <Button onClick={handleCreateNew} className="bg-pulse-500 hover:bg-pulse-600">
           <Plus className="h-4 w-4 mr-2" />
           New Workflow
-        </button>
+        </Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Workflows</p>
-              <p className="text-2xl font-bold text-gray-900">{workflowStats.totalWorkflows}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
+      <StatsGrid stats={stats} />
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Workflows</p>
-              <p className="text-2xl font-bold text-gray-900">{workflowStats.activeWorkflows}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Play className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Completed This Week</p>
-              <p className="text-2xl font-bold text-gray-900">{workflowStats.completedThisWeek}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Study Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{workflowStats.studyHoursThisWeek}h</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Clock className="h-6 w-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Workflows */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      {/* Active Workflows */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Recent Workflows</h2>
+          <Button variant="outline" size="sm">
+            <MoreHorizontal className="h-4 w-4 mr-2" />
+            View All
+          </Button>
         </div>
 
-        <div className="divide-y divide-gray-200">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {recentWorkflows.map((workflow) => (
-            <div 
-              key={workflow.id} 
-              className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${
-                selectedWorkflow === workflow.id ? 'bg-pulse-50 border-l-4 border-pulse-500' : ''
-              }`}
+            <SessionCard
+              key={workflow.id}
+              title={workflow.title}
+              description={workflow.description}
+              icon={BookOpen}
+              progress={workflow.progress}
+              status={workflow.status}
+              lastActivity={workflow.lastModified}
+              studyTime={workflow.timeSpent}
               onClick={() => setSelectedWorkflow(selectedWorkflow === workflow.id ? null : workflow.id)}
+              onContinue={() => handleContinueWorkflow(workflow.id)}
+              className={selectedWorkflow === workflow.id ? 'ring-2 ring-pulse-500' : ''}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <h3 className="text-lg font-medium text-gray-900">{workflow.title}</h3>
-                    <span className={`px-2 py-1 text-xs rounded-full flex items-center space-x-1 ${
-                      workflow.status === 'active' ? 'bg-green-100 text-green-700' :
-                      workflow.status === 'paused' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {getStatusIcon(workflow.status)}
-                      <span>{workflow.status}</span>
-                    </span>
+              {selectedWorkflow === workflow.id && (
+                <div className="mt-4 p-4 bg-pulse-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Next Session</h4>
+                  <p className="text-sm text-gray-600 mb-3">{workflow.nextSession}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {workflow.studyMaterials} materials
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {workflow.status}
+                    </Badge>
                   </div>
-                  
-                  <p className="text-gray-600 text-sm mt-1">{workflow.description}</p>
-                  
-                  <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
-                    <span>Last modified: {workflow.lastModified}</span>
-                    <span>{workflow.studyMaterials} study materials</span>
-                    <span>Time spent: {workflow.timeSpent}</span>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progress</span>
-                      <span className="text-gray-900 font-medium">{workflow.progress}%</span>
-                    </div>
-                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-pulse-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${workflow.progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {selectedWorkflow === workflow.id && (
-                    <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-2">Next Session</h4>
-                      <p className="text-sm text-gray-600 mb-3">{workflow.nextSession}</p>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleContinueWorkflow(workflow.id);
-                          }}
-                          className="px-3 py-1 bg-pulse-500 text-white rounded text-sm hover:bg-pulse-600 transition-colors"
-                        >
-                          Continue Session
-                        </button>
-                        <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors">
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-                
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContinueWorkflow(workflow.id);
-                  }}
-                  className="ml-6 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
+              )}
+            </SessionCard>
           ))}
         </div>
       </div>
