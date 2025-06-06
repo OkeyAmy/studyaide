@@ -1,29 +1,32 @@
 
 import React from 'react';
 import { Play, Brain, Clock, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardCards = () => {
+  const navigate = useNavigate();
+
   const cards = [
     {
       title: 'Start a Study Session',
       description: 'Begin a focused learning session with AI-powered guidance',
       icon: Play,
       color: 'bg-pulse-500',
-      action: 'Start Session'
+      action: () => navigate('/study-session')
     },
     {
       title: 'Access AI Workspace',
       description: 'Create summaries, flashcards, and quizzes instantly',
       icon: Brain,
       color: 'bg-blue-500',
-      action: 'Open Workspace'
+      action: () => console.log('AI Workspace')
     },
     {
       title: 'View Recent Activity',
       description: 'Check your learning progress and recent documents',
       icon: Clock,
       color: 'bg-green-500',
-      action: 'View Activity'
+      action: () => console.log('Recent Activity')
     }
   ];
 
@@ -42,8 +45,11 @@ const DashboardCards = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">{card.title}</h3>
             <p className="text-gray-600 text-sm mb-4">{card.description}</p>
             
-            <button className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-lg transition-colors text-sm font-medium">
-              {card.action}
+            <button 
+              onClick={card.action}
+              className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-lg transition-colors text-sm font-medium"
+            >
+              {card.title === 'Start a Study Session' ? 'Start Session' : card.title.replace('Access ', '').replace('View ', 'View')}
             </button>
           </div>
         );
