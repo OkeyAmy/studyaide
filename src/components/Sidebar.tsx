@@ -1,25 +1,35 @@
 
 import React from 'react';
-import { Home, BookOpen, Brain, Settings, LogOut } from 'lucide-react';
+import { Home, BookOpen, Brain, Zap, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-const Sidebar = () => {
+interface SidebarProps {
+  activeSession?: string;
+  onSessionChange?: (session: string) => void;
+}
+
+const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps) => {
   const { signOut } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: BookOpen, label: 'My Workflows', path: '/dashboard/workflows' },
-    { icon: Brain, label: 'Knowledge Base', path: '/dashboard/knowledge' },
-    { icon: Settings, label: 'AI Tools', path: '/dashboard/ai-tools' },
-    { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+    { icon: Home, label: 'Home', key: 'dashboard' },
+    { icon: BookOpen, label: 'My Workflows', key: 'workflows' },
+    { icon: Brain, label: 'Knowledge Base', key: 'knowledge' },
+    { icon: Zap, label: 'AI Tools', key: 'ai-tools' },
+    { icon: Settings, label: 'Settings', key: 'settings' },
   ];
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleNavClick = (key: string) => {
+    if (onSessionChange) {
+      onSessionChange(key);
+    }
   };
 
   return (
@@ -34,12 +44,12 @@ const Sidebar = () => {
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = activeSession === item.key;
           
           return (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              key={item.key}
+              onClick={() => handleNavClick(item.key)}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isActive
                   ? 'bg-pulse-50 text-pulse-600 border-pulse-200'
