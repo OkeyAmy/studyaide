@@ -88,17 +88,15 @@ export interface WorkflowResponse {
   recentWorkflowSessions: WorkflowSession[];
 }
 
+// Extended Material type for frontend display
+export interface MaterialDisplay extends Material {
+  type: "pdf" | "docx" | "audio" | "video" | "other";
+  studyTime: number;
+  usedInWorkflow: boolean;
+  uploadedAt: string;
+}
+
 export interface MaterialResponse {
   totalItems: number;
-  materials: Array<{
-    id: string;
-    title: string;
-    type: "pdf" | "docx" | "audio" | "video" | "other";
-    status: "active" | "archived";
-    tags: string[];
-    headings: string[];
-    studyTime: number;
-    usedInWorkflow: boolean;
-    uploadedAt: string;
-  }>;
+  materials: MaterialDisplay[];
 }

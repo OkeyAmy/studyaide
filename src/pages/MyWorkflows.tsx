@@ -113,7 +113,7 @@ const MyWorkflows = () => {
               description={`${session.materials?.length || 0} materials • ${session.featuresUsed?.length || 0} tools used`}
               icon={BookOpen}
               progress={session.status === 'completed' ? 100 : session.status === 'active' ? 75 : 45}
-              status={session.status}
+              status={session.status as "active" | "completed" | "paused"}
               lastActivity={new Date(session.createdAt).toLocaleDateString()}
               studyTime={`${session.timeSpent} hours`}
               onClick={() => setSelectedWorkflow(selectedWorkflow === session.id ? null : session.id)}

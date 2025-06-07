@@ -15,10 +15,10 @@ import {
   Clock,
   Tag as TagIcon
 } from 'lucide-react';
-import { Material } from '@/types/api';
+import { MaterialDisplay } from '@/types/api';
 
 interface MaterialViewerProps {
-  material: Material;
+  material: MaterialDisplay;
   onBack: () => void;
 }
 
@@ -53,16 +53,16 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
           </Button>
           <div>
             <div className="flex items-center space-x-2 mb-1">
-              <span className="text-2xl">{getFileTypeIcon(material.type)}</span>
+              <span className="text-2xl">{getFileTypeIcon(material.file_type)}</span>
               <h1 className="text-2xl font-bold text-gray-900">{material.title}</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="outline" className="capitalize">
-                {material.type}
+                {material.file_type}
               </Badge>
               <div className="flex items-center space-x-1 text-gray-600">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm">{material.studyTime}h study time</span>
+                <span className="text-sm">{material.study_time}h study time</span>
               </div>
               <Badge className={material.usedInWorkflow ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
                 {material.usedInWorkflow ? 'In Workflow' : 'Standalone'}
@@ -144,13 +144,13 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
                 <TabsContent key={tool.id} value={tool.id} className="space-y-4">
                   {tool.id === 'viewer' ? (
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                      <div className="text-6xl mb-4">{getFileTypeIcon(material.type)}</div>
+                      <div className="text-6xl mb-4">{getFileTypeIcon(material.file_type)}</div>
                       <h3 className="text-lg font-medium text-gray-900 mb-2">{material.title}</h3>
                       <p className="text-gray-600 mb-4">
-                        {material.type.toUpperCase()} • Uploaded {new Date(material.uploadedAt).toLocaleDateString()}
+                        {material.file_type.toUpperCase()} • Uploaded {new Date(material.created_at).toLocaleDateString()}
                       </p>
                       <Button className="bg-pulse-500 hover:bg-pulse-600">
-                        Open {material.type.toUpperCase()}
+                        Open {material.file_type.toUpperCase()}
                       </Button>
                     </div>
                   ) : (

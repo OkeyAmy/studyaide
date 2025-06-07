@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Brain, FileText, Network, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCreateMaterial } from '@/hooks/useDatabase';
+import { toast } from 'sonner';
 import FlashcardsTab from './tabs/FlashcardsTab';
 import SummaryTab from './tabs/SummaryTab';
 import MindMapTab from './tabs/MindMapTab';
@@ -16,6 +18,8 @@ type TabType = 'flashcards' | 'summary' | 'mindmap' | 'quiz';
 
 const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('flashcards');
+  const [isSaved, setIsSaved] = useState(false);
+  const createMaterial = useCreateMaterial();
 
   const tabs = [
     {
@@ -47,6 +51,37 @@ const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
       color: 'bg-purple-500'
     }
   ];
+
+  const handleSaveToHub = async () => {
+    try {
+      // Extract file extension and map to supported types
+      const getFileType = (fileName: string) => {
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        switch (extension) {
+          case 'pdf': return 'pdf';
+          case 'docx': case 'doc': return 'docx';
+          case 'mp3': case 'wav': case 'm4a': return 'audio';
+          case 'mp4': case 'mov': case 'avi': return 'video';
+          default: return 'other';
+        }
+      };
+
+      await createMaterial.mutateAsync({
+        title: fileName.replace(/\.[^/.]+$/, ""), // Remove file extension
+        file_type: getFileType(fileName),
+        content_summary: 'AI-generated study materials created from uploaded content.',
+        tags: ['study-session', 'ai-generated'],
+        headings: ['Summary', 'Key Concepts', 'Practice Questions'],
+        study_time: 1.5
+      });
+
+      setIsSaved(true);
+      toast.success('Study materials saved to Knowledge Hub!');
+    } catch (error) {
+      console.error('Error saving to Knowledge Hub:', error);
+      toast.error('Failed to save to Knowledge Hub. Please try again.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -111,10 +146,24 @@ const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">Save to Knowledge Hub</h3>
-            <p className="text-sm text-gray-600">Keep these study materials for future reference</p>
+            <p className="text-sm text-gray-600">
+              {isSaved 
+                ? 'Your study materials have been saved to your Knowledge Hub'
+                : 'Keep these study materials for future reference'
+              }
+            </p>
           </div>
-          <button className="px-6 py-2 bg-pulse-500 text-white rounded-lg hover:bg-pulse-600 transition-colors">
-            Add to Hub
+          <button 
+            onClick={handleSaveToHub}
+            disabled={isSaved || createMaterial.isPending}
+            className={cn(
+              "px-6 py-2 rounded-lg transition-colors",
+              isSaved 
+                ? "bg-green-500 text-white cursor-not-allowed"
+                : "bg-pulse-500 text-white hover:bg-pulse-600"
+            )}
+          >
+            {createMaterial.isPending ? 'Saving...' : isSaved ? 'Saved ✓' : 'Add to Hub'}
           </button>
         </div>
       </div>
