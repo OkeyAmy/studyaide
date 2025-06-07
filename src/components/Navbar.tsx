@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X, LogIn, UserPlus } from "lucide-react";
@@ -66,11 +65,11 @@ const Navbar = () => {
               e.preventDefault();
               scrollToTop();
             }}
-            aria-label="StudyAIde"
+            aria-label="StudyAide"
           >
             <img 
               src="/logo.svg" 
-              alt="StudyAIde Logo" 
+              alt="StudyAide Logo" 
               className="h-7 sm:h-8" 
             />
           </a>

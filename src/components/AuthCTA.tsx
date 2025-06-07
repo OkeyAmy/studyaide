@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Brain, Lightbulb } from "lucide-react";
 import AuthModal from "./auth/AuthModal";
@@ -52,7 +51,7 @@ const AuthCTA = () => {
             <div className="absolute bottom-0 left-0 w-24 sm:w-32 h-24 sm:h-32 bg-gray-100/50 rounded-full -translate-x-1/2 translate-y-1/2 blur-2xl"></div>
             
             <div className="pulse-chip mx-auto mb-4 sm:mb-6">
-              <span>Join StudyAIde</span>
+              <span>Join StudyAide</span>
             </div>
             
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
@@ -61,7 +60,7 @@ const AuthCTA = () => {
             </h2>
             
             <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto">
-              Join thousands of students who are already learning smarter with StudyAIde. Transform any content into personalized study materials in seconds.
+              Join thousands of students who are already learning smarter with StudyAide. Transform any content into personalized study materials in seconds.
             </p>
             
             {/* Feature highlights */}
