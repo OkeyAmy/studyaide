@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -141,55 +140,66 @@ const KnowledgeBase = () => {
 
       {/* Materials Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMaterials.map((material) => (
-          <div
-            key={material.id}
-            onClick={() => setSelectedMaterial(material)}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getFileTypeIcon(material.type)}</span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">{material.title}</h3>
-                  <p className="text-sm text-gray-500 capitalize">{material.type}</p>
+        {filteredMaterials.map((material) => {
+          // Ensure proper typing for material selection
+          const handleMaterialClick = () => {
+            const materialWithCorrectTypes: MaterialDisplay = {
+              ...material,
+              status: material.status as 'active' | 'archived'
+            };
+            setSelectedMaterial(materialWithCorrectTypes);
+          };
+
+          return (
+            <div
+              key={material.id}
+              onClick={handleMaterialClick}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{getFileTypeIcon(material.type)}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">{material.title}</h3>
+                    <p className="text-sm text-gray-500 capitalize">{material.type}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="p-1">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1">
+                  {material.tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {material.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{material.tags.length - 3}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>{material.studyTime}h study time</span>
+                  <Badge 
+                    variant="outline" 
+                    className={material.usedInWorkflow ? 'border-green-200 text-green-700' : 'border-gray-200'}
+                  >
+                    {material.usedInWorkflow ? 'In Workflow' : 'Standalone'}
+                  </Badge>
+                </div>
+
+                <div className="text-xs text-gray-400">
+                  Uploaded {new Date(material.uploadedAt).toLocaleDateString()}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="p-1">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
             </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-1">
-                {material.tags.slice(0, 3).map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-                {material.tags.length > 3 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{material.tags.length - 3}
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>{material.studyTime}h study time</span>
-                <Badge 
-                  variant="outline" 
-                  className={material.usedInWorkflow ? 'border-green-200 text-green-700' : 'border-gray-200'}
-                >
-                  {material.usedInWorkflow ? 'In Workflow' : 'Standalone'}
-                </Badge>
-              </div>
-
-              <div className="text-xs text-gray-400">
-                Uploaded {new Date(material.uploadedAt).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredMaterials.length === 0 && (

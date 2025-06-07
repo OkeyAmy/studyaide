@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Play, Clock, BookOpen, Plus, TrendingUp, Pause, CheckCircle, MoreHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import SessionCard from '@/components/shared/SessionCard';
 import StatsGrid from '@/components/shared/StatsGrid';
 import WorkflowSessionView from '@/components/workflow/WorkflowSessionView';
+import WorkflowCreator from '@/components/workflow/WorkflowCreator';
 import { Badge } from '@/components/ui/badge';
 import { useWorkflowData } from '@/hooks/useDatabase';
 
@@ -14,6 +14,7 @@ const MyWorkflows = () => {
   const { data: workflowData, isLoading } = useWorkflowData();
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
+  const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
 
   const stats = [
     {
@@ -55,11 +56,17 @@ const MyWorkflows = () => {
   };
 
   const handleCreateNew = () => {
-    navigate('/study-session');
+    setShowWorkflowCreator(true);
   };
 
   const handleBackToList = () => {
     setSelectedSession(null);
+    setShowWorkflowCreator(false);
+  };
+
+  const handleWorkflowCreated = (workflowId: string) => {
+    setShowWorkflowCreator(false);
+    // Optionally navigate to the new workflow or refresh the list
   };
 
   if (isLoading) {
@@ -76,6 +83,15 @@ const MyWorkflows = () => {
 
   if (selectedSession) {
     return <WorkflowSessionView session={selectedSession} onBack={handleBackToList} />;
+  }
+
+  if (showWorkflowCreator) {
+    return (
+      <WorkflowCreator
+        onBack={handleBackToList}
+        onWorkflowCreated={handleWorkflowCreated}
+      />
+    );
   }
 
   return (
