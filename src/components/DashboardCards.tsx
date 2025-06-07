@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Mic, Brain, TrendingUp, Clock, Target, BookOpen } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import { mockDashboardData } from '@/data/mockApi';
+import { useDashboardData } from '@/hooks/useDatabase';
 
 const DashboardCards = () => {
   const navigate = useNavigate();
+  const { data: dashboardData, isLoading } = useDashboardData();
 
   const handleStartSession = () => {
     navigate('/study-session');
@@ -16,33 +17,42 @@ const DashboardCards = () => {
   const quickStats = [
     {
       title: "Login Streak",
-      value: `${mockDashboardData.loginStreak} days`,
+      value: `${dashboardData?.loginStreak || 0} days`,
       icon: TrendingUp,
       color: "text-green-600",
       bgColor: "bg-green-100"
     },
     {
       title: "Time Saved",
-      value: `${mockDashboardData.timeSavedHours}h`,
+      value: `${dashboardData?.timeSavedHours || 0}h`,
       icon: Clock,
       color: "text-blue-600",
       bgColor: "bg-blue-100"
     },
     {
       title: "Materials Processed",
-      value: mockDashboardData.materialsProcessed,
+      value: dashboardData?.materialsProcessed || 0,
       icon: Target,
       color: "text-purple-600",
       bgColor: "bg-purple-100"
     },
     {
       title: "Active Workflows",
-      value: mockDashboardData.activeWorkflows,
+      value: dashboardData?.activeWorkflows || 0,
       icon: BookOpen,
       color: "text-orange-600",
       bgColor: "bg-orange-100"
     }
   ];
+
+  if (isLoading) {
+    return <div className="animate-pulse space-y-6">
+      <div className="h-32 bg-gray-200 rounded-xl"></div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>)}
+      </div>
+    </div>;
+  }
 
   return (
     <div className="space-y-6">

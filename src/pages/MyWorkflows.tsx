@@ -7,18 +7,18 @@ import SessionCard from '@/components/shared/SessionCard';
 import StatsGrid from '@/components/shared/StatsGrid';
 import WorkflowSessionView from '@/components/workflow/WorkflowSessionView';
 import { Badge } from '@/components/ui/badge';
-import { mockWorkflowData } from '@/data/mockApi';
-import { WorkflowSession } from '@/types/api';
+import { useWorkflowData } from '@/hooks/useDatabase';
 
 const MyWorkflows = () => {
   const navigate = useNavigate();
-  const [selectedSession, setSelectedSession] = useState<WorkflowSession | null>(null);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<number | null>(null);
+  const { data: workflowData, isLoading } = useWorkflowData();
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
 
   const stats = [
     {
       label: 'Total Workflows',
-      value: mockWorkflowData.totalWorkflows,
+      value: workflowData?.totalWorkflows || 0,
       icon: BookOpen,
       color: 'bg-blue-500',
       trend: '+3 this week',
@@ -26,7 +26,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Active Sessions',
-      value: mockWorkflowData.activeSessions,
+      value: workflowData?.activeSessions || 0,
       icon: Play,
       color: 'bg-green-500',
       trend: '2 in progress',
@@ -34,7 +34,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Completed',
-      value: mockWorkflowData.completedWorkflows,
+      value: workflowData?.completedWorkflows || 0,
       icon: CheckCircle,
       color: 'bg-purple-500',
       trend: 'This week',
@@ -42,7 +42,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Study Hours',
-      value: `${mockWorkflowData.studyHours}h`,
+      value: `${workflowData?.studyHours || 0}h`,
       icon: Clock,
       color: 'bg-orange-500',
       trend: '+5.2h vs last week',
@@ -50,7 +50,7 @@ const MyWorkflows = () => {
     }
   ];
 
-  const handleContinueWorkflow = (session: WorkflowSession) => {
+  const handleContinueWorkflow = (session: any) => {
     setSelectedSession(session);
   };
 
@@ -61,6 +61,18 @@ const MyWorkflows = () => {
   const handleBackToList = () => {
     setSelectedSession(null);
   };
+
+  if (isLoading) {
+    return <div className="space-y-6">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>)}
+      </div>
+    </div>;
+  }
 
   if (selectedSession) {
     return <WorkflowSessionView session={selectedSession} onBack={handleBackToList} />;
@@ -94,33 +106,33 @@ const MyWorkflows = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {mockWorkflowData.recentWorkflowSessions.map((session) => (
+          {workflowData?.recentWorkflowSessions?.map((session) => (
             <SessionCard
               key={session.id}
               title={session.title}
-              description={`${session.materials.length} materials • ${session.featuresUsed.length} tools used`}
+              description={`${session.materials?.length || 0} materials • ${session.featuresUsed?.length || 0} tools used`}
               icon={BookOpen}
               progress={session.status === 'completed' ? 100 : session.status === 'active' ? 75 : 45}
               status={session.status}
               lastActivity={new Date(session.createdAt).toLocaleDateString()}
               studyTime={`${session.timeSpent} hours`}
-              onClick={() => setSelectedWorkflow(selectedWorkflow === parseInt(session.id.split('_')[1]) ? null : parseInt(session.id.split('_')[1]))}
+              onClick={() => setSelectedWorkflow(selectedWorkflow === session.id ? null : session.id)}
               onContinue={() => handleContinueWorkflow(session)}
-              className={selectedWorkflow === parseInt(session.id.split('_')[1]) ? 'ring-2 ring-pulse-500' : ''}
+              className={selectedWorkflow === session.id ? 'ring-2 ring-pulse-500' : ''}
             >
-              {selectedWorkflow === parseInt(session.id.split('_')[1]) && (
+              {selectedWorkflow === session.id && (
                 <div className="mt-4 p-4 bg-pulse-50 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-2">Session Details</h4>
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
-                      {session.featuresUsed.map((feature, index) => (
+                      {session.featuresUsed?.map((feature: string, index: number) => (
                         <Badge key={index} variant="outline" className="text-xs capitalize">
                           {feature}
                         </Badge>
                       ))}
                     </div>
                     <p className="text-sm text-gray-600">
-                      {session.materials.length} materials • Created {new Date(session.createdAt).toLocaleDateString()}
+                      {session.materials?.length || 0} materials • Created {new Date(session.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

@@ -36,8 +36,7 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
     <div className="bg-white border-r border-gray-200 h-full w-64 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center">
-          <img src="/logo.svg" alt="StudyAIde" className="h-8 w-auto" />
-          <span className="ml-2 text-xl font-semibold text-gray-900">StudyAIde</span>
+          <span className="text-xl font-semibold text-gray-900">Solid-Edge and Kickstart</span>
         </div>
       </div>
 

@@ -9,13 +9,225 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      materials: {
+        Row: {
+          content_summary: string | null
+          created_at: string | null
+          file_size: number | null
+          file_type: string
+          file_url: string | null
+          headings: string[] | null
+          id: string
+          status: string | null
+          study_time: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content_summary?: string | null
+          created_at?: string | null
+          file_size?: number | null
+          file_type: string
+          file_url?: string | null
+          headings?: string[] | null
+          id?: string
+          status?: string | null
+          study_time?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content_summary?: string | null
+          created_at?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string | null
+          headings?: string[] | null
+          id?: string
+          status?: string | null
+          study_time?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          id: string
+          last_login: string | null
+          login_streak: number | null
+          materials_processed: number | null
+          total_study_time: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_login?: string | null
+          login_streak?: number | null
+          materials_processed?: number | null
+          total_study_time?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_login?: string | null
+          login_streak?: number | null
+          materials_processed?: number | null
+          total_study_time?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_materials: {
+        Row: {
+          added_at: string | null
+          id: string
+          material_id: string
+          workflow_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          material_id: string
+          workflow_id: string
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          material_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_materials_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          created_at: string | null
+          features_used: string[] | null
+          id: string
+          status: string | null
+          time_spent: number | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          features_used?: string[] | null
+          id?: string
+          status?: string | null
+          time_spent?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          features_used?: string[] | null
+          id?: string
+          status?: string | null
+          time_spent?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_activity: {
+        Args: {
+          action_type: string
+          entity_type: string
+          entity_id?: string
+          details?: Json
+        }
+        Returns: undefined
+      }
+      update_user_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,25 +1,26 @@
 
 import React, { useState } from 'react';
-import { Search, Brain, FileText, Video, Headphones, Filter, Calendar, BookOpen, Tag, MoreHorizontal } from 'lucide-react';
+import { Search, Brain, FileText, Video, Headphones, Filter, BookOpen, Tag, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
 import MaterialViewer from '@/components/material/MaterialViewer';
-import { mockMaterialData } from '@/data/mockApi';
-import { Material } from '@/types/api';
+import { useMaterialsData } from '@/hooks/useDatabase';
 
 const KnowledgeBase = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-  const [selectedItem, setSelectedItem] = useState<number | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  
+  const { data: materialData, isLoading } = useMaterialsData();
 
   const stats = [
     {
       label: 'Total Items',
-      value: mockMaterialData.totalItems,
+      value: materialData?.totalItems || 0,
       icon: BookOpen,
       color: 'bg-blue-500',
       trend: '+12 this week',
@@ -27,7 +28,7 @@ const KnowledgeBase = () => {
     },
     {
       label: 'Study Materials',
-      value: mockMaterialData.materials.filter(m => m.status === 'active').length,
+      value: materialData?.materials?.filter((m: any) => m.status === 'active').length || 0,
       icon: FileText,
       color: 'bg-green-500',
       trend: 'Active content',
@@ -35,7 +36,7 @@ const KnowledgeBase = () => {
     },
     {
       label: 'In Workflows',
-      value: mockMaterialData.materials.filter(m => m.usedInWorkflow).length,
+      value: materialData?.materials?.filter((m: any) => m.usedInWorkflow).length || 0,
       icon: Brain,
       color: 'bg-purple-500',
       trend: '3 new',
@@ -43,7 +44,7 @@ const KnowledgeBase = () => {
     },
     {
       label: 'Total Study Time',
-      value: `${mockMaterialData.materials.reduce((acc, m) => acc + m.studyTime, 0).toFixed(1)}h`,
+      value: `${materialData?.materials?.reduce((acc: number, m: any) => acc + m.studyTime, 0).toFixed(1) || 0}h`,
       icon: Tag,
       color: 'bg-orange-500',
       trend: 'Organized',
@@ -59,11 +60,11 @@ const KnowledgeBase = () => {
     { id: 'docx', label: 'Documents' }
   ];
 
-  const filteredContent = mockMaterialData.materials.filter(item => 
+  const filteredContent = materialData?.materials?.filter((item: any) => 
     (selectedFilter === 'all' || item.type === selectedFilter) &&
     (searchQuery === '' || item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+     item.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+  ) || [];
 
   const getIconForType = (type: string) => {
     switch (type) {
@@ -75,13 +76,25 @@ const KnowledgeBase = () => {
     }
   };
 
-  const handleViewMaterial = (material: Material) => {
+  const handleViewMaterial = (material: any) => {
     setSelectedMaterial(material);
   };
 
   const handleBackToList = () => {
     setSelectedMaterial(null);
   };
+
+  if (isLoading) {
+    return <div className="space-y-6">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>)}
+      </div>
+    </div>;
+  }
 
   if (selectedMaterial) {
     return <MaterialViewer material={selectedMaterial} onBack={handleBackToList} />;
@@ -144,16 +157,16 @@ const KnowledgeBase = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredContent.map((item) => (
+          {filteredContent.map((item: any) => (
             <SessionCard
               key={item.id}
               title={item.title}
-              description={`${item.headings.length} topics • ${item.tags.length} tags`}
+              description={`${item.headings?.length || 0} topics • ${item.tags?.length || 0} tags`}
               icon={getIconForType(item.type)}
               lastActivity={new Date(item.uploadedAt).toLocaleDateString()}
               studyTime={`${item.studyTime}h`}
-              onClick={() => setSelectedItem(selectedItem === parseInt(item.id.split('_')[1]) ? null : parseInt(item.id.split('_')[1]))}
-              className={selectedItem === parseInt(item.id.split('_')[1]) ? 'ring-2 ring-pulse-500' : ''}
+              onClick={() => setSelectedItem(selectedItem === item.id ? null : item.id)}
+              className={selectedItem === item.id ? 'ring-2 ring-pulse-500' : ''}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
@@ -166,19 +179,19 @@ const KnowledgeBase = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-1">
-                  {item.tags.slice(0, 3).map((tag, index) => (
+                  {item.tags?.slice(0, 3).map((tag: string, index: number) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
-                  {item.tags.length > 3 && (
+                  {item.tags?.length > 3 && (
                     <Badge variant="secondary" className="text-xs">
                       +{item.tags.length - 3}
                     </Badge>
                   )}
                 </div>
 
-                {selectedItem === parseInt(item.id.split('_')[1]) && (
+                {selectedItem === item.id && (
                   <div className="pt-3 border-t border-gray-100">
                     <div className="flex space-x-2">
                       <Button 
