@@ -100,3 +100,15 @@ export interface MaterialResponse {
   totalItems: number;
   materials: MaterialDisplay[];
 }
+
+// Create material mutation input type
+export interface CreateMaterialInput {
+  title: string;
+  file_type: string;
+  file_url?: string;
+  file_size?: number;
+  tags?: string[];
+  headings?: string[];
+  content_summary?: string;
+  study_time?: number;
+}

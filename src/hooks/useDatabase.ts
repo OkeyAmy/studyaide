@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { CreateMaterialInput } from '@/types/api';
 
 // Dashboard data hook
 export const useDashboardData = () => {
@@ -70,7 +71,7 @@ export const useWorkflowData = () => {
         materials: w.workflow_materials?.map((wm: any) => wm.material_id) || [],
         featuresUsed: w.features_used || [],
         timeSpent: w.time_spent || 0,
-        status: w.status,
+        status: w.status as "active" | "paused" | "completed",
         createdAt: w.created_at
       })) || [];
 
@@ -107,12 +108,8 @@ export const useMaterialsData = () => {
       return {
         totalItems: materials?.length || 0,
         materials: materials?.map(m => ({
-          id: m.id,
-          title: m.title,
-          type: m.file_type,
-          status: m.status,
-          tags: m.tags || [],
-          headings: m.headings || [],
+          ...m,
+          type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
           studyTime: m.study_time || 0,
           usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
           uploadedAt: m.created_at
@@ -182,15 +179,7 @@ export const useCreateMaterial = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (materialData: {
-      title: string;
-      file_type: string;
-      file_url?: string;
-      file_size?: number;
-      tags?: string[];
-      headings?: string[];
-      content_summary?: string;
-    }) => {
+    mutationFn: async (materialData: CreateMaterialInput) => {
       if (!user) throw new Error('User not authenticated');
 
       const { data: material, error } = await supabase
