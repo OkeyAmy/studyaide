@@ -10,6 +10,8 @@ interface WorkflowCreatorProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateWorkflow: (title: string, selectedMaterials: MaterialDisplay[]) => void;
+  onBack?: () => void;
+  onWorkflowCreated?: (workflowId: string) => void;
 }
 
 const WorkflowCreator = ({ isOpen, onClose, onCreateWorkflow }: WorkflowCreatorProps) => {
@@ -38,19 +40,13 @@ const WorkflowCreator = ({ isOpen, onClose, onCreateWorkflow }: WorkflowCreatorP
     material.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
-  const handleMaterialToggle = (material: any) => {
-    // Convert the material to MaterialDisplay format with proper typing
-    const materialDisplay: MaterialDisplay = {
-      ...material,
-      status: (material.status === 'archived' ? 'archived' : 'active') as 'active' | 'archived'
-    };
-
+  const handleMaterialToggle = (material: MaterialDisplay) => {
     setSelectedMaterials(prev => {
-      const isSelected = prev.some(m => m.id === materialDisplay.id);
+      const isSelected = prev.some(m => m.id === material.id);
       if (isSelected) {
-        return prev.filter(m => m.id !== materialDisplay.id);
+        return prev.filter(m => m.id !== material.id);
       } else {
-        return [...prev, materialDisplay];
+        return [...prev, material];
       }
     });
   };
