@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { ArrowLeft, User, Bell, Shield, Palette, Brain, Download, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
