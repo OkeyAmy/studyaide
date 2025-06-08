@@ -1,100 +1,120 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Play, Clock, BookOpen, Plus, TrendingUp, Pause, CheckCircle, MoreHorizontal } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import SessionCard from '@/components/shared/SessionCard';
-import StatsGrid from '@/components/shared/StatsGrid';
-import WorkflowSessionView from '@/components/workflow/WorkflowSessionView';
-import WorkflowCreator from '@/components/workflow/WorkflowCreator';
 import { Badge } from '@/components/ui/badge';
-import { useWorkflowData } from '@/hooks/useDatabase';
+import StatsGrid from '@/components/shared/StatsGrid';
+import SessionCard from '@/components/shared/SessionCard';
+import WorkflowCreator from '@/components/workflow/WorkflowCreator';
+import { MaterialDisplay } from '@/types/api';
 
 const MyWorkflows = () => {
-  const navigate = useNavigate();
-  const { data: workflowData, isLoading } = useWorkflowData();
-  const [selectedSession, setSelectedSession] = useState<any>(null);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
   const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
 
   const stats = [
     {
       label: 'Total Workflows',
-      value: workflowData?.totalWorkflows || 0,
-      icon: BookOpen,
+      value: 12,
+      icon: Target,
       color: 'bg-blue-500',
-      trend: '+3 this week',
+      trend: '+2 this week',
       trendDirection: 'up' as const
     },
     {
       label: 'Active Sessions',
-      value: workflowData?.activeSessions || 0,
+      value: 3,
       icon: Play,
       color: 'bg-green-500',
-      trend: '2 in progress',
-      trendDirection: 'neutral' as const
+      trend: 'In progress',
+      trendDirection: 'up' as const
     },
     {
       label: 'Completed',
-      value: workflowData?.completedWorkflows || 0,
-      icon: CheckCircle,
+      value: 9,
+      icon: TrendingUp,
       color: 'bg-purple-500',
-      trend: 'This week',
+      trend: 'This month',
       trendDirection: 'up' as const
     },
     {
       label: 'Study Hours',
-      value: `${workflowData?.studyHours || 0}h`,
+      value: '42h',
       icon: Clock,
       color: 'bg-orange-500',
-      trend: '+5.2h vs last week',
+      trend: '+8h this week',
       trendDirection: 'up' as const
     }
   ];
 
-  const handleContinueWorkflow = (session: any) => {
-    setSelectedSession(session);
-  };
+  const workflows = [
+    {
+      id: '1',
+      title: 'Deep Learning Fundamentals',
+      description: 'Complete course on neural networks and deep learning',
+      status: 'active' as const,
+      progress: 68,
+      materials: 5,
+      timeSpent: '12h 30m',
+      lastActivity: '2 hours ago',
+      estimatedCompletion: '3 days',
+      tags: ['AI', 'Machine Learning', 'Deep Learning']
+    },
+    {
+      id: '2',
+      title: 'Data Structures and Algorithms',
+      description: 'Comprehensive study of DSA concepts',
+      status: 'completed' as const,
+      progress: 100,
+      materials: 8,
+      timeSpent: '24h 15m',
+      lastActivity: '1 week ago',
+      estimatedCompletion: 'Completed',
+      tags: ['Computer Science', 'Algorithms', 'Programming']
+    },
+    {
+      id: '3',
+      title: 'Quantum Physics Basics',
+      description: 'Introduction to quantum mechanics principles',
+      status: 'active' as const,
+      progress: 45,
+      materials: 6,
+      timeSpent: '8h 45m',
+      lastActivity: '1 day ago',
+      estimatedCompletion: '1 week',
+      tags: ['Physics', 'Quantum Mechanics', 'Science']
+    },
+    {
+      id: '4',
+      title: 'Web Development Bootcamp',
+      description: 'Full-stack web development learning path',
+      status: 'paused' as const,
+      progress: 32,
+      materials: 12,
+      timeSpent: '18h 20m',
+      lastActivity: '3 days ago',
+      estimatedCompletion: '2 weeks',
+      tags: ['Web Development', 'JavaScript', 'React']
+    }
+  ];
 
-  const handleCreateNew = () => {
-    setShowWorkflowCreator(true);
-  };
-
-  const handleBackToList = () => {
-    setSelectedSession(null);
+  const handleCreateWorkflow = (title: string, selectedMaterials: MaterialDisplay[]) => {
+    console.log('Creating workflow:', title, 'with materials:', selectedMaterials);
+    // Here you would typically save the workflow to your backend
     setShowWorkflowCreator(false);
   };
 
-  const handleWorkflowCreated = (workflowId: string) => {
-    setShowWorkflowCreator(false);
-    // Optionally navigate to the new workflow or refresh the list
+  const handleWorkflowAction = (workflowId: string, action: 'play' | 'pause') => {
+    if (action === 'play') {
+      setActiveWorkflow(workflowId);
+      setTimeout(() => {
+        setActiveWorkflow(null);
+        alert(`Workflow ${workflowId} started successfully!`);
+      }, 2000);
+    } else {
+      console.log(`Pausing workflow ${workflowId}`);
+    }
   };
-
-  if (isLoading) {
-    return <div className="space-y-6">
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>)}
-      </div>
-    </div>;
-  }
-
-  if (selectedSession) {
-    return <WorkflowSessionView session={selectedSession} onBack={handleBackToList} />;
-  }
-
-  if (showWorkflowCreator) {
-    return (
-      <WorkflowCreator
-        onBack={handleBackToList}
-        onWorkflowCreated={handleWorkflowCreated}
-      />
-    );
-  }
 
   return (
     <AppLayout activeSession="workflows">
@@ -103,11 +123,11 @@ const MyWorkflows = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Workflows</h1>
-            <p className="text-gray-600">Manage and track your learning workflows</p>
+            <p className="text-gray-600">Manage your learning workflows and track progress</p>
           </div>
           <Button 
-            onClick={() => setIsCreating(true)}
-            className="bg-pulse-500 hover:bg-pulse-600 text-white"
+            onClick={() => setShowWorkflowCreator(true)}
+            className="bg-pulse-500 hover:bg-pulse-600"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Workflow
@@ -117,7 +137,7 @@ const MyWorkflows = () => {
         {/* Stats Overview */}
         <StatsGrid stats={stats} />
 
-        {/* Active Workflows */}
+        {/* Workflows Grid */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Recent Workflows</h2>
@@ -128,41 +148,108 @@ const MyWorkflows = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {workflowData?.recentWorkflowSessions?.map((session) => (
+            {workflows.map((workflow) => (
               <SessionCard
-                key={session.id}
-                title={session.title}
-                description={`${session.materials?.length || 0} materials • ${session.featuresUsed?.length || 0} tools used`}
-                icon={BookOpen}
-                progress={session.status === 'completed' ? 100 : session.status === 'active' ? 75 : 45}
-                status={session.status}
-                lastActivity={new Date(session.createdAt).toLocaleDateString()}
-                studyTime={`${session.timeSpent} hours`}
-                onClick={() => setSelectedWorkflow(selectedWorkflow === session.id ? null : session.id)}
-                onContinue={() => handleContinueWorkflow(session)}
-                className={selectedWorkflow === session.id ? 'ring-2 ring-pulse-500' : ''}
+                key={workflow.id}
+                title={workflow.title}
+                description={workflow.description}
+                icon={workflow.status === 'active' ? Play : workflow.status === 'paused' ? Pause : TrendingUp}
+                lastActivity={workflow.lastActivity}
+                className="relative"
               >
-                {selectedWorkflow === session.id && (
-                  <div className="mt-4 p-4 bg-pulse-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Session Details</h4>
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {session.featuresUsed?.map((feature: string, index: number) => (
-                          <Badge key={index} variant="outline" className="text-xs capitalize">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {session.materials?.length || 0} materials • Created {new Date(session.createdAt).toLocaleDateString()}
-                      </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge 
+                      variant={
+                        workflow.status === 'active' ? 'default' : 
+                        workflow.status === 'completed' ? 'secondary' : 
+                        'outline'
+                      }
+                    >
+                      {workflow.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">{workflow.timeSpent}</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Progress</span>
+                      <span className="font-medium">{workflow.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-pulse-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${workflow.progress}%` }}
+                      />
                     </div>
                   </div>
-                )}
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Materials</span>
+                      <p className="font-medium">{workflow.materials} items</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">ETA</span>
+                      <p className="font-medium">{workflow.estimatedCompletion}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {workflow.tags.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {workflow.tags.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{workflow.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2 pt-2">
+                    {workflow.status !== 'completed' && (
+                      <Button
+                        onClick={() => handleWorkflowAction(workflow.id, workflow.status === 'active' ? 'pause' : 'play')}
+                        disabled={activeWorkflow === workflow.id}
+                        className="flex-1 bg-pulse-500 hover:bg-pulse-600"
+                        size="sm"
+                      >
+                        {activeWorkflow === workflow.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Starting...
+                          </>
+                        ) : workflow.status === 'active' ? (
+                          <>
+                            <Pause className="h-4 w-4 mr-2" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Continue
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="px-3">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </SessionCard>
             ))}
           </div>
         </div>
+
+        {/* Workflow Creator Modal */}
+        <WorkflowCreator
+          isOpen={showWorkflowCreator}
+          onClose={() => setShowWorkflowCreator(false)}
+          onCreateWorkflow={handleCreateWorkflow}
+        />
       </div>
     </AppLayout>
   );

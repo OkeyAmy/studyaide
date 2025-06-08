@@ -1,16 +1,17 @@
-
 import React, { useState } from 'react';
 import { Plus, X, Search, FileText, Headphones, Video, File, Clock, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useMaterials } from '@/hooks/useDatabase';
+import { useMaterialsData } from '@/hooks/useDatabase';
 import { MaterialDisplay } from '@/types/api';
 
 interface WorkflowCreatorProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateWorkflow: (title: string, selectedMaterials: MaterialDisplay[]) => void;
+  onBack?: () => void;
+  onWorkflowCreated?: (workflowId: string) => void;
 }
 
 const WorkflowCreator = ({ isOpen, onClose, onCreateWorkflow }: WorkflowCreatorProps) => {
@@ -18,7 +19,7 @@ const WorkflowCreator = ({ isOpen, onClose, onCreateWorkflow }: WorkflowCreatorP
   const [selectedMaterials, setSelectedMaterials] = useState<MaterialDisplay[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { data: materialsData } = useMaterials();
+  const { data: materialsData } = useMaterialsData();
 
   const getTypeIcon = (type: MaterialDisplay['type']) => {
     switch (type) {
