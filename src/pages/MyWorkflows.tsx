@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Plus, MoreHorizontal, Clock, Target, TrendingUp, Mic, Upload, FolderOpen } from 'lucide-react';
+import { Plus, MoreHorizontal, Clock, Target, TrendingUp, Mic, Upload, FolderOpen, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatsGrid from '@/components/shared/StatsGrid';
 import WorkflowCreator from '@/components/workflow/WorkflowCreator';
