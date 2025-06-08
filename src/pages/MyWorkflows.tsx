@@ -1,18 +1,19 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Plus, MoreHorizontal, Clock, Target, TrendingUp, Mic, Upload, FolderOpen, Play } from 'lucide-react';
+import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mic, Upload, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
+import SessionCard from '@/components/shared/SessionCard';
 import WorkflowCreator from '@/components/workflow/WorkflowCreator';
-import WorkflowCard from '@/components/workflow/WorkflowCard';
 import { MaterialDisplay } from '@/types/api';
 
 const MyWorkflows = () => {
   const navigate = useNavigate();
   const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
   const [showCreateOptions, setShowCreateOptions] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
 
   const stats = [
     {
@@ -54,83 +55,69 @@ const MyWorkflows = () => {
       id: '1',
       title: 'Deep Learning Fundamentals',
       description: 'Complete course on neural networks and deep learning',
-      materials: [
-        { id: 'm1', title: 'Neural Networks Intro.pdf', type: 'pdf' },
-        { id: 'm2', title: 'Backpropagation Lecture.mp4', type: 'video' },
-        { id: 'm3', title: 'Deep Learning Notes.pdf', type: 'pdf' }
-      ],
+      status: 'active' as const,
+      progress: 68,
+      materials: 5,
       timeSpent: '12h 30m',
       lastActivity: '2 hours ago',
-      tags: ['AI', 'Machine Learning', 'Deep Learning'],
-      hasComponents: {
-        summary: true,
-        quiz: true,
-        mindMap: true,
-        chatbot: true
-      }
+      estimatedCompletion: '3 days',
+      tags: ['AI', 'Machine Learning', 'Deep Learning']
     },
     {
       id: '2',
       title: 'Data Structures and Algorithms',
       description: 'Comprehensive study of DSA concepts',
-      materials: [
-        { id: 'm4', title: 'Array Operations.pdf', type: 'pdf' },
-        { id: 'm5', title: 'Sorting Algorithms.mp3', type: 'audio' },
-        { id: 'm6', title: 'Tree Structures.pdf', type: 'pdf' }
-      ],
+      status: 'completed' as const,
+      progress: 100,
+      materials: 8,
       timeSpent: '24h 15m',
       lastActivity: '1 week ago',
-      tags: ['Computer Science', 'Algorithms', 'Programming'],
-      hasComponents: {
-        summary: true,
-        quiz: false,
-        mindMap: true,
-        chatbot: true
-      }
+      estimatedCompletion: 'Completed',
+      tags: ['Computer Science', 'Algorithms', 'Programming']
     },
     {
       id: '3',
       title: 'Quantum Physics Basics',
       description: 'Introduction to quantum mechanics principles',
-      materials: [
-        { id: 'm7', title: 'Quantum Mechanics.pdf', type: 'pdf' },
-        { id: 'm8', title: 'Wave Functions.mp4', type: 'video' }
-      ],
+      status: 'active' as const,
+      progress: 45,
+      materials: 6,
       timeSpent: '8h 45m',
       lastActivity: '1 day ago',
-      tags: ['Physics', 'Quantum Mechanics', 'Science'],
-      hasComponents: {
-        summary: true,
-        quiz: true,
-        mindMap: false,
-        chatbot: true
-      }
+      estimatedCompletion: '1 week',
+      tags: ['Physics', 'Quantum Mechanics', 'Science']
     },
     {
       id: '4',
       title: 'Web Development Bootcamp',
       description: 'Full-stack web development learning path',
-      materials: [
-        { id: 'm9', title: 'React Fundamentals.pdf', type: 'pdf' },
-        { id: 'm10', title: 'Node.js Tutorial.mp4', type: 'video' },
-        { id: 'm11', title: 'Database Design.mp3', type: 'audio' }
-      ],
+      status: 'paused' as const,
+      progress: 32,
+      materials: 12,
       timeSpent: '18h 20m',
       lastActivity: '3 days ago',
-      tags: ['Web Development', 'JavaScript', 'React'],
-      hasComponents: {
-        summary: true,
-        quiz: true,
-        mindMap: true,
-        chatbot: false
-      }
+      estimatedCompletion: '2 weeks',
+      tags: ['Web Development', 'JavaScript', 'React']
     }
   ];
 
   const handleCreateWorkflow = (title: string, selectedMaterials: MaterialDisplay[]) => {
     console.log('Creating workflow:', title, 'with materials:', selectedMaterials);
+    // Here you would typically save the workflow to your backend
     setShowWorkflowCreator(false);
     setShowCreateOptions(false);
+  };
+
+  const handleWorkflowAction = (workflowId: string, action: 'play' | 'pause') => {
+    if (action === 'play') {
+      setActiveWorkflow(workflowId);
+      setTimeout(() => {
+        setActiveWorkflow(null);
+        alert(`Workflow ${workflowId} started successfully!`);
+      }, 2000);
+    } else {
+      console.log(`Pausing workflow ${workflowId}`);
+    }
   };
 
   const handleStartRecording = () => {
@@ -144,34 +131,6 @@ const MyWorkflows = () => {
   const handleImportFromKnowledge = () => {
     setShowCreateOptions(false);
     setShowWorkflowCreator(true);
-  };
-
-  const handleDeleteWorkflow = (workflowId: string) => {
-    if (window.confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
-      console.log('Deleting workflow:', workflowId);
-      // Here you would typically call your delete API
-    }
-  };
-
-  const handleRenameWorkflow = (workflowId: string, newTitle: string) => {
-    console.log('Renaming workflow:', workflowId, 'to:', newTitle);
-    // Here you would typically call your rename API
-  };
-
-  const handleAddTag = (workflowId: string, tag: string) => {
-    console.log('Adding tag:', tag, 'to workflow:', workflowId);
-    // Here you would typically call your add tag API
-  };
-
-  const handleRemoveTag = (workflowId: string, tag: string) => {
-    console.log('Removing tag:', tag, 'from workflow:', workflowId);
-    // Here you would typically call your remove tag API
-  };
-
-  const handleContinueSession = (workflowId: string) => {
-    console.log('Continuing session for workflow:', workflowId);
-    // Navigate to workflow session view
-    navigate(`/workflows/${workflowId}/session`);
   };
 
   return (
@@ -249,15 +208,97 @@ const MyWorkflows = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {workflows.map((workflow) => (
-              <WorkflowCard
+              <SessionCard
                 key={workflow.id}
-                workflow={workflow}
-                onDelete={handleDeleteWorkflow}
-                onRename={handleRenameWorkflow}
-                onAddTag={handleAddTag}
-                onRemoveTag={handleRemoveTag}
-                onContinueSession={handleContinueSession}
-              />
+                title={workflow.title}
+                description={workflow.description}
+                icon={workflow.status === 'active' ? Play : workflow.status === 'paused' ? Pause : TrendingUp}
+                lastActivity={workflow.lastActivity}
+                className="relative"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge 
+                      variant={
+                        workflow.status === 'active' ? 'default' : 
+                        workflow.status === 'completed' ? 'secondary' : 
+                        'outline'
+                      }
+                    >
+                      {workflow.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">{workflow.timeSpent}</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Progress</span>
+                      <span className="font-medium">{workflow.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-pulse-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${workflow.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Materials</span>
+                      <p className="font-medium">{workflow.materials} items</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">ETA</span>
+                      <p className="font-medium">{workflow.estimatedCompletion}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {workflow.tags.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {workflow.tags.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{workflow.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2 pt-2">
+                    {workflow.status !== 'completed' && (
+                      <Button
+                        onClick={() => handleWorkflowAction(workflow.id, workflow.status === 'active' ? 'pause' : 'play')}
+                        disabled={activeWorkflow === workflow.id}
+                        className="flex-1 bg-pulse-500 hover:bg-pulse-600"
+                        size="sm"
+                      >
+                        {activeWorkflow === workflow.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Starting...
+                          </>
+                        ) : workflow.status === 'active' ? (
+                          <>
+                            <Pause className="h-4 w-4 mr-2" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Continue
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="px-3">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </SessionCard>
             ))}
           </div>
         </div>

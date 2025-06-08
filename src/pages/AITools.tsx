@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Brain, Sparkles, Target, TrendingUp, Clock, Play } from 'lucide-react';
+import { Brain, Sparkles, Zap, Target, TrendingUp, Clock, Play, Settings, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SessionCard from '@/components/shared/SessionCard';
 
 const AITools = () => {
   const [selectedTool, setSelectedTool] = useState<number | null>(null);
@@ -50,49 +50,47 @@ const AITools = () => {
       id: 1,
       name: "Smart Summary Generator",
       description: "Generate concise summaries from any content",
-      icon: Brain
+      usage: "24 times this week",
+      lastUsed: "2 hours ago",
+      icon: Brain,
+      status: "active",
+      efficiency: "+45%",
+      accuracy: "94%"
     },
     {
       id: 2,
-      name: "Flashcard Creator",
+      name: "Adaptive Flashcard Creator",
       description: "AI creates personalized flashcards based on your learning style",
-      icon: Sparkles
+      usage: "18 times this week",
+      lastUsed: "1 day ago",
+      icon: Sparkles,
+      status: "active",
+      efficiency: "+38%",
+      accuracy: "91%"
     },
     {
       id: 3,
       name: "Quiz Generator",
       description: "Generate practice quizzes from your study materials",
-      icon: Target
+      usage: "12 times this week",
+      lastUsed: "2 days ago",
+      icon: Target,
+      status: "active",
+      efficiency: "+29%",
+      accuracy: "87%"
     },
     {
       id: 4,
       name: "Learning Path Optimizer",
       description: "AI suggests optimal study sequences and schedules",
-      icon: TrendingUp
+      usage: "8 times this week",
+      lastUsed: "3 days ago",
+      icon: TrendingUp,
+      status: "beta",
+      efficiency: "+52%",
+      accuracy: "89%"
     }
   ];
-
-  const handleLaunchTool = (toolId: number) => {
-    setLaunchedTool(toolId);
-    setTimeout(() => {
-      setLaunchedTool(null);
-      // Navigate to the specific tool UI
-      switch (toolId) {
-        case 1:
-          console.log('Launching Smart Summary Generator');
-          break;
-        case 2:
-          console.log('Launching Flashcard Creator');
-          break;
-        case 3:
-          console.log('Launching Quiz Generator');
-          break;
-        case 4:
-          console.log('Launching Learning Path Optimizer');
-          break;
-      }
-    }, 2000);
-  };
 
   const aiInsights = [
     {
@@ -115,6 +113,14 @@ const AITools = () => {
     }
   ];
 
+  const handleLaunchTool = (toolId: number) => {
+    setLaunchedTool(toolId);
+    setTimeout(() => {
+      setLaunchedTool(null);
+      alert(`AI Tool ${toolId} launched successfully!`);
+    }, 2000);
+  };
+
   return (
     <AppLayout activeSession="ai-tools">
       <div className="space-y-6">
@@ -133,59 +139,70 @@ const AITools = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Available Tools</h2>
+            <Button variant="outline" size="sm">
+              <MoreHorizontal className="h-4 w-4 mr-2" />
+              View All
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {aiTools.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Card 
-                  key={tool.id}
-                  className="transition-all duration-200 hover:shadow-md cursor-pointer group"
-                  onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-pulse-100 rounded-lg">
-                        <Icon className="h-6 w-6 text-pulse-600" />
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{tool.name}</CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">{tool.description}</p>
-                      </div>
+            {aiTools.map((tool) => (
+              <SessionCard
+                key={tool.id}
+                title={tool.name}
+                description={tool.description}
+                icon={tool.icon}
+                lastActivity={tool.lastUsed}
+                onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
+                className={selectedTool === tool.id ? 'ring-2 ring-pulse-500' : ''}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={tool.status === 'active' ? 'default' : 'secondary'}>
+                      {tool.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">{tool.usage}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Efficiency</span>
+                      <p className="font-medium text-green-600">{tool.efficiency}</p>
                     </div>
-                  </CardHeader>
+                    <div>
+                      <span className="text-gray-500">Accuracy</span>
+                      <p className="font-medium text-blue-600">{tool.accuracy}</p>
+                    </div>
+                  </div>
 
                   {selectedTool === tool.id && (
-                    <CardContent className="pt-0">
-                      <div className="pt-3 border-t border-gray-100">
-                        <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLaunchTool(tool.id);
-                          }}
-                          disabled={launchedTool === tool.id}
-                          className="w-full bg-pulse-500 hover:bg-pulse-600"
-                          size="sm"
-                        >
-                          {launchedTool === tool.id ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Launching...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4 mr-2" />
-                              Launch Tool
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
+                    <div className="pt-3 border-t border-gray-100">
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLaunchTool(tool.id);
+                        }}
+                        disabled={launchedTool === tool.id}
+                        className="w-full bg-pulse-500 hover:bg-pulse-600"
+                        size="sm"
+                      >
+                        {launchedTool === tool.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Launching...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Launch Tool
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
-                </Card>
-              );
-            })}
+                </div>
+              </SessionCard>
+            ))}
           </div>
         </div>
 
@@ -206,7 +223,7 @@ const AITools = () => {
                     )}
                   </div>
                   <div className="ml-4 text-right">
-                    <span className="text-xs text-gray-500">{insight.confidence}% confidence</span>
+                    <Badge variant="outline">{insight.confidence}% confidence</Badge>
                   </div>
                 </div>
               </div>
