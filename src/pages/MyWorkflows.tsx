@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target } from 'lucide-react';
+import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mic, Upload, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
@@ -9,7 +10,9 @@ import WorkflowCreator from '@/components/workflow/WorkflowCreator';
 import { MaterialDisplay } from '@/types/api';
 
 const MyWorkflows = () => {
+  const navigate = useNavigate();
   const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
+  const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
 
   const stats = [
@@ -102,6 +105,7 @@ const MyWorkflows = () => {
     console.log('Creating workflow:', title, 'with materials:', selectedMaterials);
     // Here you would typically save the workflow to your backend
     setShowWorkflowCreator(false);
+    setShowCreateOptions(false);
   };
 
   const handleWorkflowAction = (workflowId: string, action: 'play' | 'pause') => {
@@ -116,6 +120,19 @@ const MyWorkflows = () => {
     }
   };
 
+  const handleStartRecording = () => {
+    navigate('/study-session');
+  };
+
+  const handleUploadFile = () => {
+    navigate('/study-session');
+  };
+
+  const handleImportFromKnowledge = () => {
+    setShowCreateOptions(false);
+    setShowWorkflowCreator(true);
+  };
+
   return (
     <AppLayout activeSession="workflows">
       <div className="space-y-6">
@@ -125,13 +142,55 @@ const MyWorkflows = () => {
             <h1 className="text-2xl font-bold text-gray-900">My Workflows</h1>
             <p className="text-gray-600">Manage your learning workflows and track progress</p>
           </div>
-          <Button 
-            onClick={() => setShowWorkflowCreator(true)}
-            className="bg-pulse-500 hover:bg-pulse-600"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Workflow
-          </Button>
+          <div className="relative">
+            <Button 
+              onClick={() => setShowCreateOptions(!showCreateOptions)}
+              className="bg-pulse-500 hover:bg-pulse-600"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Workflow
+            </Button>
+            
+            {/* Create Options Dropdown */}
+            {showCreateOptions && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <div className="p-2">
+                  <button
+                    onClick={handleImportFromKnowledge}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <FolderOpen className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">Import from Knowledge Base</p>
+                      <p className="text-sm text-gray-500">Use existing materials</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={handleStartRecording}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <Mic className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">Start New Recording</p>
+                      <p className="text-sm text-gray-500">Record live lecture</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={handleUploadFile}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <Upload className="h-5 w-5 text-purple-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">Upload New Material</p>
+                      <p className="text-sm text-gray-500">Add files to workflow</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -243,6 +302,14 @@ const MyWorkflows = () => {
             ))}
           </div>
         </div>
+
+        {/* Click outside to close dropdown */}
+        {showCreateOptions && (
+          <div 
+            className="fixed inset-0 z-0"
+            onClick={() => setShowCreateOptions(false)}
+          />
+        )}
 
         {/* Workflow Creator Modal */}
         <WorkflowCreator
