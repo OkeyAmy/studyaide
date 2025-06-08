@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import { ArrowLeft, User, Bell, Shield, Palette, Brain, Download, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -241,67 +241,55 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Dashboard
-          </button>
-          
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-pulse-500 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-semibold text-gray-900">Settings</span>
-          </div>
+    <AppLayout activeSession="settings">
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600">Manage your account and preferences</p>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Settings Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-              <nav className="p-2">
-                {settingsTabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors mb-1 ${
-                        activeTab === tab.id
-                          ? 'bg-pulse-50 text-pulse-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 mr-3" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </nav>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Settings Navigation */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <nav className="p-2">
+                  {settingsTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors mb-1 ${
+                          activeTab === tab.id
+                            ? 'bg-pulse-50 text-pulse-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 mr-3" />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
             </div>
-          </div>
 
-          {/* Settings Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                {settingsTabs.find(tab => tab.id === activeTab)?.label}
-              </h2>
-              {renderCurrentTab()}
+            {/* Settings Content */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                  {settingsTabs.find(tab => tab.id === activeTab)?.label}
+                </h2>
+                {renderCurrentTab()}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

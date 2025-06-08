@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import { Brain, Sparkles, Zap, Target, TrendingUp, Clock, Play, Settings, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -122,118 +122,116 @@ const AITools = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Tools</h1>
-          <p className="text-gray-600">Intelligent study assistance powered by AI</p>
-        </div>
-        <Button variant="outline">
-          <Settings className="h-4 w-4 mr-2" />
-          AI Settings
-        </Button>
-      </div>
-
-      {/* Stats Overview */}
-      <StatsGrid stats={stats} />
-
-      {/* AI Tools Grid */}
-      <div className="space-y-4">
+    <AppLayout activeSession="ai-tools">
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Available Tools</h2>
-          <Button variant="outline" size="sm">
-            <MoreHorizontal className="h-4 w-4 mr-2" />
-            View All
-          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AI Tools</h1>
+            <p className="text-gray-600">Powerful AI-driven study assistants</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {aiTools.map((tool) => (
-            <SessionCard
-              key={tool.id}
-              title={tool.name}
-              description={tool.description}
-              icon={tool.icon}
-              lastActivity={tool.lastUsed}
-              onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
-              className={selectedTool === tool.id ? 'ring-2 ring-pulse-500' : ''}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant={tool.status === 'active' ? 'default' : 'secondary'}>
-                    {tool.status}
-                  </Badge>
-                  <span className="text-sm text-gray-500">{tool.usage}</span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Efficiency</span>
-                    <p className="font-medium text-green-600">{tool.efficiency}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Accuracy</span>
-                    <p className="font-medium text-blue-600">{tool.accuracy}</p>
-                  </div>
-                </div>
+        {/* Stats Overview */}
+        <StatsGrid stats={stats} />
 
-                {selectedTool === tool.id && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLaunchTool(tool.id);
-                      }}
-                      disabled={launchedTool === tool.id}
-                      className="w-full bg-pulse-500 hover:bg-pulse-600"
-                      size="sm"
-                    >
-                      {launchedTool === tool.id ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Launching...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Launch Tool
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </SessionCard>
-          ))}
-        </div>
-      </div>
-
-      {/* AI Insights */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Insights & Recommendations</h2>
+        {/* AI Tools Grid */}
         <div className="space-y-4">
-          {aiInsights.map((insight, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 mb-2">{insight.title}</h3>
-                  <p className="text-sm text-gray-700">{insight.insight}</p>
-                  {insight.actionable && (
-                    <Button variant="link" className="p-0 h-auto mt-2 text-pulse-600">
-                      Apply Recommendation →
-                    </Button>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Available Tools</h2>
+            <Button variant="outline" size="sm">
+              <MoreHorizontal className="h-4 w-4 mr-2" />
+              View All
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {aiTools.map((tool) => (
+              <SessionCard
+                key={tool.id}
+                title={tool.name}
+                description={tool.description}
+                icon={tool.icon}
+                lastActivity={tool.lastUsed}
+                onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
+                className={selectedTool === tool.id ? 'ring-2 ring-pulse-500' : ''}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={tool.status === 'active' ? 'default' : 'secondary'}>
+                      {tool.status}
+                    </Badge>
+                    <span className="text-sm text-gray-500">{tool.usage}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Efficiency</span>
+                      <p className="font-medium text-green-600">{tool.efficiency}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Accuracy</span>
+                      <p className="font-medium text-blue-600">{tool.accuracy}</p>
+                    </div>
+                  </div>
+
+                  {selectedTool === tool.id && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLaunchTool(tool.id);
+                        }}
+                        disabled={launchedTool === tool.id}
+                        className="w-full bg-pulse-500 hover:bg-pulse-600"
+                        size="sm"
+                      >
+                        {launchedTool === tool.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Launching...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Launch Tool
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </div>
-                <div className="ml-4 text-right">
-                  <Badge variant="outline">{insight.confidence}% confidence</Badge>
+              </SessionCard>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Insights */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Insights & Recommendations</h2>
+          <div className="space-y-4">
+            {aiInsights.map((insight, index) => (
+              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900 mb-2">{insight.title}</h3>
+                    <p className="text-sm text-gray-700">{insight.insight}</p>
+                    {insight.actionable && (
+                      <Button variant="link" className="p-0 h-auto mt-2 text-pulse-600">
+                        Apply Recommendation →
+                      </Button>
+                    )}
+                  </div>
+                  <div className="ml-4 text-right">
+                    <Badge variant="outline">{insight.confidence}% confidence</Badge>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

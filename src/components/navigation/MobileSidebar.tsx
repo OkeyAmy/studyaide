@@ -2,7 +2,7 @@
 import React from 'react';
 import { X, Home, BookOpen, Brain, Zap, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -16,13 +16,14 @@ interface MobileSidebarProps {
 const MobileSidebar = ({ isOpen, onClose, activeSession = 'dashboard', onSessionChange }: MobileSidebarProps) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', key: 'dashboard', badge: null },
-    { icon: BookOpen, label: 'My Workflows', key: 'workflows', badge: '5' },
-    { icon: Brain, label: 'Knowledge Base', key: 'knowledge', badge: '127' },
-    { icon: Zap, label: 'AI Tools', key: 'ai-tools', badge: 'New' },
-    { icon: Settings, label: 'Settings', key: 'settings', badge: null },
+    { icon: Home, label: 'Dashboard', key: 'dashboard', path: '/dashboard', badge: null },
+    { icon: BookOpen, label: 'My Workflows', key: 'workflows', path: '/workflows', badge: '5' },
+    { icon: Brain, label: 'Knowledge Base', key: 'knowledge', path: '/knowledge', badge: '127' },
+    { icon: Zap, label: 'AI Tools', key: 'ai-tools', path: '/ai-tools', badge: 'New' },
+    { icon: Settings, label: 'Settings', key: 'settings', path: '/settings', badge: null },
   ];
 
   const handleSignOut = async () => {
@@ -30,12 +31,18 @@ const MobileSidebar = ({ isOpen, onClose, activeSession = 'dashboard', onSession
     navigate('/');
   };
 
-  const handleNavigation = (key: string) => {
+  const handleNavigation = (item: typeof navItems[0]) => {
+    navigate(item.path);
     if (onSessionChange) {
-      onSessionChange(key);
+      onSessionChange(item.key);
     }
     onClose();
   };
+
+  // Determine active session from current path if not provided
+  const currentActiveSession = activeSession || navItems.find(item => 
+    location.pathname === item.path
+  )?.key || 'dashboard';
 
   if (!isOpen) return null;
 
@@ -61,12 +68,12 @@ const MobileSidebar = ({ isOpen, onClose, activeSession = 'dashboard', onSession
         <nav className="flex-1 px-4 py-6 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeSession === item.key;
+            const isActive = currentActiveSession === item.key;
             
             return (
               <button
                 key={item.key}
-                onClick={() => handleNavigation(item.key)}
+                onClick={() => handleNavigation(item)}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                   isActive
                     ? 'bg-pulse-500 text-white'

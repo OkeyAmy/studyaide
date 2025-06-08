@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Home, BookOpen, Brain, Zap, Settings, LogOut, TrendingUp, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -15,12 +14,14 @@ interface SidebarProps {
 const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
     { 
       icon: Home, 
       label: 'Dashboard', 
       key: 'dashboard',
+      path: '/dashboard',
       badge: null,
       description: 'Overview & quick actions'
     },
@@ -28,6 +29,7 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
       icon: BookOpen, 
       label: 'My Workflows', 
       key: 'workflows',
+      path: '/workflows',
       badge: '5 Active',
       description: 'Study sessions & progress'
     },
@@ -35,6 +37,7 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
       icon: Brain, 
       label: 'Knowledge Base', 
       key: 'knowledge',
+      path: '/knowledge',
       badge: '127',
       description: 'Saved materials & notes'
     },
@@ -42,6 +45,7 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
       icon: Zap, 
       label: 'AI Tools', 
       key: 'ai-tools',
+      path: '/ai-tools',
       badge: 'New',
       description: 'AI-powered study assistants'
     },
@@ -49,6 +53,7 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
       icon: Settings, 
       label: 'Settings', 
       key: 'settings',
+      path: '/settings',
       badge: null,
       description: 'Preferences & account'
     },
@@ -59,11 +64,17 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
     navigate('/');
   };
 
-  const handleNavClick = (key: string) => {
+  const handleNavClick = (item: typeof navItems[0]) => {
+    navigate(item.path);
     if (onSessionChange) {
-      onSessionChange(key);
+      onSessionChange(item.key);
     }
   };
+
+  // Determine active session from current path if not provided
+  const currentActiveSession = activeSession || navItems.find(item => 
+    location.pathname === item.path
+  )?.key || 'dashboard';
 
   return (
     <div className="bg-white border-r border-gray-200 h-full w-72 flex flex-col shadow-sm">
@@ -104,12 +115,12 @@ const Sidebar = ({ activeSession = 'dashboard', onSessionChange }: SidebarProps)
       <nav className="flex-1 px-4 py-4 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeSession === item.key;
+          const isActive = currentActiveSession === item.key;
           
           return (
             <button
               key={item.key}
-              onClick={() => handleNavClick(item.key)}
+              onClick={() => handleNavClick(item)}
               className={`w-full group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                 isActive
                   ? 'bg-pulse-500 text-white shadow-md'

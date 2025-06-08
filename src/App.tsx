@@ -9,6 +9,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import StudySession from "./pages/StudySession";
+import MyWorkflows from "./pages/MyWorkflows";
+import KnowledgeBase from "./pages/KnowledgeBase";
+import AITools from "./pages/AITools";
+import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +32,38 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/workflows" 
+              element={
+                <ProtectedRoute>
+                  <MyWorkflows />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/knowledge" 
+              element={
+                <ProtectedRoute>
+                  <KnowledgeBase />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-tools" 
+              element={
+                <ProtectedRoute>
+                  <AITools />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               } 
             />
