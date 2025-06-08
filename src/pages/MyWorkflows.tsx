@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mic, Upload, FolderOpen, FileText, Brain, Network, MessageSquare, Edit, Trash2, Tag as TagIcon } from 'lucide-react';
+import { Plus, MoreHorizontal, Clock, Target, TrendingUp, Mic, Upload, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import WorkflowCreator from '@/components/workflow/WorkflowCreator';
 import WorkflowCard from '@/components/workflow/WorkflowCard';
@@ -14,7 +12,6 @@ const MyWorkflows = () => {
   const navigate = useNavigate();
   const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
   const [showCreateOptions, setShowCreateOptions] = useState(false);
-  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
 
   const stats = [
     {
@@ -148,10 +145,6 @@ const MyWorkflows = () => {
     setShowWorkflowCreator(true);
   };
 
-  const handleMaterialClick = (materialId: string) => {
-    navigate(`/knowledge-base?material=${materialId}`);
-  };
-
   const handleDeleteWorkflow = (workflowId: string) => {
     if (window.confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
       console.log('Deleting workflow:', workflowId);
@@ -174,26 +167,10 @@ const MyWorkflows = () => {
     // Here you would typically call your remove tag API
   };
 
-  const handleAddComponent = (workflowId: string, componentType: string) => {
-    console.log('Adding component:', componentType, 'to workflow:', workflowId);
-    // Route to appropriate creation interface
-    switch (componentType) {
-      case 'summary':
-        navigate(`/workflows/${workflowId}/create-summary`);
-        break;
-      case 'quiz':
-        navigate(`/workflows/${workflowId}/create-quiz`);
-        break;
-      case 'mindMap':
-        navigate(`/workflows/${workflowId}/create-mindmap`);
-        break;
-      case 'chatbot':
-        navigate(`/workflows/${workflowId}/create-chatbot`);
-        break;
-      case 'material':
-        navigate('/study-session');
-        break;
-    }
+  const handleContinueSession = (workflowId: string) => {
+    console.log('Continuing session for workflow:', workflowId);
+    // Navigate to workflow session view
+    navigate(`/workflows/${workflowId}/session`);
   };
 
   return (
@@ -274,12 +251,11 @@ const MyWorkflows = () => {
               <WorkflowCard
                 key={workflow.id}
                 workflow={workflow}
-                onMaterialClick={handleMaterialClick}
                 onDelete={handleDeleteWorkflow}
                 onRename={handleRenameWorkflow}
                 onAddTag={handleAddTag}
                 onRemoveTag={handleRemoveTag}
-                onAddComponent={handleAddComponent}
+                onContinueSession={handleContinueSession}
               />
             ))}
           </div>

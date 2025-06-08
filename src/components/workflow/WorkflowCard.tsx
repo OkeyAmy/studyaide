@@ -5,85 +5,49 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
-  FileText, 
-  Headphones, 
-  Video, 
-  File, 
   Clock, 
   Edit, 
   Trash2, 
   Tag as TagIcon, 
   Plus,
-  Brain,
-  Network,
-  MessageSquare,
   MoreHorizontal,
   X,
-  Check
+  Check,
+  Play
 } from 'lucide-react';
-
-interface Material {
-  id: string;
-  title: string;
-  type: string;
-}
 
 interface Workflow {
   id: string;
   title: string;
   description: string;
-  materials: Material[];
+  materials: any[];
   timeSpent: string;
   lastActivity: string;
   tags: string[];
-  hasComponents: {
-    summary: boolean;
-    quiz: boolean;
-    mindMap: boolean;
-    chatbot: boolean;
-  };
 }
 
 interface WorkflowCardProps {
   workflow: Workflow;
-  onMaterialClick: (materialId: string) => void;
   onDelete: (workflowId: string) => void;
   onRename: (workflowId: string, newTitle: string) => void;
   onAddTag: (workflowId: string, tag: string) => void;
   onRemoveTag: (workflowId: string, tag: string) => void;
-  onAddComponent: (workflowId: string, componentType: string) => void;
+  onContinueSession: (workflowId: string) => void;
 }
 
 const WorkflowCard = ({
   workflow,
-  onMaterialClick,
   onDelete,
   onRename,
   onAddTag,
   onRemoveTag,
-  onAddComponent
+  onContinueSession
 }: WorkflowCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(workflow.title);
   const [newTag, setNewTag] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'pdf':
-      case 'docx':
-        return FileText;
-      case 'audio':
-      case 'mp3':
-        return Headphones;
-      case 'video':
-      case 'mp4':
-        return Video;
-      default:
-        return File;
-    }
-  };
 
   const handleSaveTitle = () => {
     if (editTitle.trim() && editTitle !== workflow.title) {
@@ -99,37 +63,6 @@ const WorkflowCard = ({
       setShowAddTag(false);
     }
   };
-
-  const components = [
-    { 
-      key: 'summary', 
-      label: 'Summary', 
-      icon: FileText, 
-      color: 'text-blue-600',
-      available: workflow.hasComponents.summary 
-    },
-    { 
-      key: 'quiz', 
-      label: 'Quiz', 
-      icon: Brain, 
-      color: 'text-purple-600',
-      available: workflow.hasComponents.quiz 
-    },
-    { 
-      key: 'mindMap', 
-      label: 'Mind Map', 
-      icon: Network, 
-      color: 'text-green-600',
-      available: workflow.hasComponents.mindMap 
-    },
-    { 
-      key: 'chatbot', 
-      label: 'Chatbot', 
-      icon: MessageSquare, 
-      color: 'text-orange-600',
-      available: workflow.hasComponents.chatbot 
-    }
-  ];
 
   return (
     <Card className="transition-all duration-200 hover:shadow-md">
@@ -205,65 +138,6 @@ const WorkflowCard = ({
           <span className="text-gray-500">Last activity: {workflow.lastActivity}</span>
         </div>
 
-        {/* Materials Section */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-gray-900">Materials ({workflow.materials.length})</h4>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onAddComponent(workflow.id, 'material')}
-              className="text-xs h-6 px-2"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add
-            </Button>
-          </div>
-          <div className="space-y-1">
-            {workflow.materials.map((material) => {
-              const Icon = getTypeIcon(material.type);
-              return (
-                <button
-                  key={material.id}
-                  onClick={() => onMaterialClick(material.id)}
-                  className="w-full flex items-center space-x-2 p-2 text-left hover:bg-gray-50 rounded-md transition-colors text-sm"
-                >
-                  <Icon className="h-4 w-4 text-gray-500" />
-                  <span className="truncate">{material.title}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Components Section */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Study Components</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {components.map((component) => {
-              const Icon = component.icon;
-              return (
-                <div key={component.key} className="flex items-center justify-between">
-                  <div className={`flex items-center space-x-2 ${component.available ? component.color : 'text-gray-400'}`}>
-                    <Icon className="h-4 w-4" />
-                    <span className="text-xs">{component.label}</span>
-                  </div>
-                  {!component.available && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onAddComponent(workflow.id, component.key)}
-                      className="text-xs h-6 w-6 p-0"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Tags Section */}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -311,6 +185,17 @@ const WorkflowCard = ({
               </Badge>
             ))}
           </div>
+        </div>
+
+        {/* Continue Session Button */}
+        <div className="pt-2">
+          <Button 
+            onClick={() => onContinueSession(workflow.id)}
+            className="w-full bg-pulse-500 hover:bg-pulse-600"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Continue Session
+          </Button>
         </div>
       </CardContent>
 
