@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Brain, Sparkles, Zap, Target, TrendingUp, Clock, Play, Settings, MoreHorizontal } from 'lucide-react';
@@ -15,7 +16,7 @@ const AITools = () => {
       label: 'AI Interactions',
       value: 156,
       icon: Brain,
-      color: 'bg-purple-500',
+      color: 'bg-gradient-to-r from-purple-500 to-violet-600',
       trend: '+23 today',
       trendDirection: 'up' as const
     },
@@ -23,7 +24,7 @@ const AITools = () => {
       label: 'Time Saved',
       value: '8.5h',
       icon: Clock,
-      color: 'bg-green-500',
+      color: 'bg-gradient-to-r from-green-500 to-emerald-600',
       trend: 'This week',
       trendDirection: 'up' as const
     },
@@ -31,7 +32,7 @@ const AITools = () => {
       label: 'Accuracy',
       value: '+23%',
       icon: Target,
-      color: 'bg-blue-500',
+      color: 'bg-gradient-to-r from-blue-500 to-cyan-600',
       trend: 'Improvement',
       trendDirection: 'up' as const
     },
@@ -39,7 +40,7 @@ const AITools = () => {
       label: 'Efficiency',
       value: '+31%',
       icon: TrendingUp,
-      color: 'bg-orange-500',
+      color: 'bg-gradient-to-r from-pulse-500 to-orange-600',
       trend: 'Study boost',
       trendDirection: 'up' as const
     }
@@ -49,13 +50,14 @@ const AITools = () => {
     {
       id: 1,
       name: "Smart Summary Generator",
-      description: "Generate concise summaries from any content",
+      description: "Generate concise summaries from any content using advanced AI",
       usage: "24 times this week",
       lastUsed: "2 hours ago",
       icon: Brain,
       status: "active",
       efficiency: "+45%",
-      accuracy: "94%"
+      accuracy: "94%",
+      color: "from-purple-500 to-violet-600"
     },
     {
       id: 2,
@@ -66,7 +68,8 @@ const AITools = () => {
       icon: Sparkles,
       status: "active",
       efficiency: "+38%",
-      accuracy: "91%"
+      accuracy: "91%",
+      color: "from-pink-500 to-rose-600"
     },
     {
       id: 3,
@@ -77,7 +80,8 @@ const AITools = () => {
       icon: Target,
       status: "active",
       efficiency: "+29%",
-      accuracy: "87%"
+      accuracy: "87%",
+      color: "from-blue-500 to-cyan-600"
     },
     {
       id: 4,
@@ -88,7 +92,8 @@ const AITools = () => {
       icon: TrendingUp,
       status: "beta",
       efficiency: "+52%",
-      accuracy: "89%"
+      accuracy: "89%",
+      color: "from-green-500 to-emerald-600"
     }
   ];
 
@@ -97,19 +102,22 @@ const AITools = () => {
       title: "Study Pattern Analysis",
       insight: "You're most productive between 9-11 AM. Consider scheduling complex topics during this time.",
       confidence: 92,
-      actionable: true
+      actionable: true,
+      color: "from-blue-500 to-cyan-600"
     },
     {
       title: "Learning Style Recommendation",
       insight: "Your retention improves 34% with visual aids. Try more mind maps and diagrams.",
       confidence: 87,
-      actionable: true
+      actionable: true,
+      color: "from-green-500 to-emerald-600"
     },
     {
       title: "Topic Mastery Prediction",
       insight: "Based on current progress, you'll master Calculus concepts in approximately 2 weeks.",
       confidence: 78,
-      actionable: false
+      actionable: false,
+      color: "from-purple-500 to-violet-600"
     }
   ];
 
@@ -123,111 +131,142 @@ const AITools = () => {
 
   return (
     <AppLayout activeSession="ai-tools">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Tools</h1>
-            <p className="text-gray-600">Powerful AI-driven study assistants</p>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <StatsGrid stats={stats} />
-
-        {/* AI Tools Grid */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Available Tools</h2>
-            <Button variant="outline" size="sm">
-              <MoreHorizontal className="h-4 w-4 mr-2" />
-              View All
-            </Button>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50 p-6">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">AI Tools</h1>
+              <p className="text-gray-600 text-lg">Powerful AI-driven study assistants</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {aiTools.map((tool) => (
-              <SessionCard
-                key={tool.id}
-                title={tool.name}
-                description={tool.description}
-                icon={tool.icon}
-                lastActivity={tool.lastUsed}
-                onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
-                className={selectedTool === tool.id ? 'ring-2 ring-pulse-500' : ''}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant={tool.status === 'active' ? 'default' : 'secondary'}>
-                      {tool.status}
-                    </Badge>
-                    <span className="text-sm text-gray-500">{tool.usage}</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Efficiency</span>
-                      <p className="font-medium text-green-600">{tool.efficiency}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Accuracy</span>
-                      <p className="font-medium text-blue-600">{tool.accuracy}</p>
-                    </div>
-                  </div>
+          {/* Stats Overview */}
+          <StatsGrid stats={stats} />
 
-                  {selectedTool === tool.id && (
-                    <div className="pt-3 border-t border-gray-100">
-                      <Button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLaunchTool(tool.id);
-                        }}
-                        disabled={launchedTool === tool.id}
-                        className="w-full bg-pulse-500 hover:bg-pulse-600"
-                        size="sm"
+          {/* AI Tools Grid */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-gray-900">Available Tools</h2>
+              <Button variant="outline" size="sm" className="bg-white/70 backdrop-blur-sm border-white/20 hover:bg-white/80 rounded-xl">
+                <MoreHorizontal className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {aiTools.map((tool) => (
+                <div
+                  key={tool.id}
+                  onClick={() => setSelectedTool(selectedTool === tool.id ? null : tool.id)}
+                  className={`group bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-500 cursor-pointer hover:scale-105 ${
+                    selectedTool === tool.id ? 'ring-2 ring-pulse-500 bg-white/90' : ''
+                  }`}
+                >
+                  <div className="space-y-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-16 h-16 bg-gradient-to-r ${tool.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
+                          <tool.icon className="h-8 w-8 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-900 text-xl mb-1">{tool.name}</h3>
+                          <p className="text-gray-600 text-sm leading-relaxed">{tool.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Badge 
+                        variant={tool.status === 'active' ? 'default' : 'secondary'}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          tool.status === 'active' 
+                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200' 
+                            : 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border-orange-200'
+                        }`}
                       >
-                        {launchedTool === tool.id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Launching...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            Launch Tool
-                          </>
-                        )}
-                      </Button>
+                        {tool.status}
+                      </Badge>
+                      <span className="text-sm text-gray-500 font-medium">{tool.usage}</span>
                     </div>
-                  )}
-                </div>
-              </SessionCard>
-            ))}
-          </div>
-        </div>
+                    
+                    <div className="grid grid-cols-2 gap-6 text-sm">
+                      <div className="space-y-1">
+                        <span className="text-gray-500 font-medium">Efficiency</span>
+                        <p className="font-bold text-lg text-green-600">{tool.efficiency}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-gray-500 font-medium">Accuracy</span>
+                        <p className="font-bold text-lg text-blue-600">{tool.accuracy}</p>
+                      </div>
+                    </div>
 
-        {/* AI Insights */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Insights & Recommendations</h2>
-          <div className="space-y-4">
-            {aiInsights.map((insight, index) => (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 mb-2">{insight.title}</h3>
-                    <p className="text-sm text-gray-700">{insight.insight}</p>
-                    {insight.actionable && (
-                      <Button variant="link" className="p-0 h-auto mt-2 text-pulse-600">
-                        Apply Recommendation →
-                      </Button>
+                    {selectedTool === tool.id && (
+                      <div className="pt-4 border-t border-gray-100/60">
+                        <Button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLaunchTool(tool.id);
+                          }}
+                          disabled={launchedTool === tool.id}
+                          className={`w-full bg-gradient-to-r ${tool.color} hover:shadow-lg text-white shadow-md rounded-2xl py-3 font-medium`}
+                          size="sm"
+                        >
+                          {launchedTool === tool.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Launching...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-2" />
+                              Launch Tool
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     )}
-                  </div>
-                  <div className="ml-4 text-right">
-                    <Badge variant="outline">{insight.confidence}% confidence</Badge>
+
+                    <div className="text-xs text-gray-500">
+                      Last used {tool.lastUsed}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* AI Insights */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">AI Insights & Recommendations</h2>
+            <div className="space-y-6">
+              {aiInsights.map((insight, index) => (
+                <div key={index} className="group bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className={`w-3 h-3 bg-gradient-to-r ${insight.color} rounded-full`}></div>
+                        <h3 className="font-semibold text-gray-900 text-lg">{insight.title}</h3>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed mb-4">{insight.insight}</p>
+                      {insight.actionable && (
+                        <Button variant="link" className="p-0 h-auto text-pulse-600 hover:text-pulse-700 font-medium">
+                          Apply Recommendation →
+                        </Button>
+                      )}
+                    </div>
+                    <div className="ml-6 text-right">
+                      <Badge 
+                        variant="outline" 
+                        className="bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full px-3 py-1"
+                      >
+                        {insight.confidence}% confidence
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
