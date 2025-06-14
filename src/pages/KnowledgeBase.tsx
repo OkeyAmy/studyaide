@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X, FolderPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import MaterialViewer from '@/components/material/MaterialViewer';
+import WorkflowSelector from '@/components/knowledge/WorkflowSelector';
 import { useMaterialsData, useDeleteMaterial } from '@/hooks/useDatabase';
 import { MaterialDisplay } from '@/types/api';
 import { toast } from 'sonner';
@@ -17,6 +19,7 @@ const KnowledgeBase = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
+  const [workflowSelector, setWorkflowSelector] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
   const deleteMaterial = useDeleteMaterial();
   const isMobile = useIsMobile();
 
@@ -79,12 +82,21 @@ const KnowledgeBase = () => {
   };
 
   const handleDeleteClick = (e: React.MouseEvent, material: MaterialDisplay) => {
-    e.stopPropagation(); // Prevent opening the material
+    e.stopPropagation();
     setDeleteConfirmation({ isOpen: true, material });
   };
 
   const handleCancelDelete = () => {
     setDeleteConfirmation({ isOpen: false, material: null });
+  };
+
+  const handleAddToWorkflow = (e: React.MouseEvent, material: MaterialDisplay) => {
+    e.stopPropagation();
+    setWorkflowSelector({ isOpen: true, material });
+  };
+
+  const handleWorkflowSelectorClose = () => {
+    setWorkflowSelector({ isOpen: false, material: null });
   };
 
   const filteredMaterials = materialData?.materials?.filter(material => {
@@ -174,10 +186,9 @@ const KnowledgeBase = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {filteredMaterials.map((material) => {
               const handleMaterialClick = () => {
-                // Ensure the status is correctly typed before setting state
                 const correctlyTypedMaterial: MaterialDisplay = {
                   ...material,
-                  status: (material.status === 'active' || material.status === 'archived') ? material.status : 'active', // Default to 'active' if type is unexpected
+                  status: (material.status === 'active' || material.status === 'archived') ? material.status : 'active',
                 };
                 setSelectedMaterial(correctlyTypedMaterial);
               };
@@ -190,7 +201,7 @@ const KnowledgeBase = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div 
                       className="flex items-start space-x-3 flex-1 min-w-0"
-                      onClick={handleMaterialClick} // Ensure this calls the corrected type handler
+                      onClick={handleMaterialClick}
                     >
                       <span className="text-3xl md:text-4xl flex-shrink-0 pt-1">{getFileTypeIcon(material.type)}</span>
                       <div className="flex-1 min-w-0">
@@ -204,6 +215,15 @@ const KnowledgeBase = () => {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={(e) => handleAddToWorkflow(e, material)}
+                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                        title="Add to workflow"
+                      >
+                        <FolderPlus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => handleDeleteClick(e, material)}
                         className="h-7 w-7 md:h-8 md:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
                       >
@@ -212,7 +232,7 @@ const KnowledgeBase = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleMaterialClick} // Ensure this calls the corrected type handler
+                        onClick={handleMaterialClick}
                         className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-600 hover:bg-pulse-50 rounded-full"
                       >
                         <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
@@ -330,6 +350,13 @@ const KnowledgeBase = () => {
             </div>
           </div>
         )}
+
+        {/* Workflow Selector Modal */}
+        <WorkflowSelector 
+          isOpen={workflowSelector.isOpen}
+          material={workflowSelector.material}
+          onClose={handleWorkflowSelectorClose}
+        />
       </div>
     </AppLayout>
   );
