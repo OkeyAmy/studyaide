@@ -139,16 +139,25 @@ export const useWorkflowData = () => {
       const completedWorkflows = workflows?.filter(w => w.status === 'completed').length || 0;
       const studyHours = workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0;
 
-      const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
-        id: w.id,
-        title: w.title,
-        materials: (Array.isArray(w.materials_data) ? w.materials_data : [])
-          .map((m: any) => toMaterialDisplay(m, true)),
-        featuresUsed: w.features_used || [],
-        timeSpent: w.time_spent || 0,
-        status: w.status as "active" | "paused" | "completed",
-        createdAt: w.created_at
-      })) || [];
+      const recentWorkflowSessions = workflows?.slice(0, 10).map(w => {
+        let materials: any[] = [];
+        // Handle new object format and old array format for backwards compatibility
+        if (w.materials_data && Array.isArray(w.materials_data.materials)) {
+          materials = w.materials_data.materials;
+        } else if (Array.isArray(w.materials_data)) {
+          materials = w.materials_data;
+        }
+        
+        return {
+          id: w.id,
+          title: w.title,
+          materials: materials.map((m: any) => toMaterialDisplay(m, true)),
+          featuresUsed: w.features_used || [],
+          timeSpent: w.time_spent || 0,
+          status: w.status as "active" | "paused" | "completed",
+          createdAt: w.created_at
+        };
+      }) || [];
 
       return {
         totalWorkflows,
@@ -210,14 +219,16 @@ export const useCreateWorkflow = () => {
         materialsData = materials || [];
       }
 
-      // Create workflow, including the materials_data
+      // Create workflow with materials_data as an object
       const { data: workflow, error } = await supabase
         .from('workflows')
         .insert({
           user_id: user.id,
           title,
           status: 'active',
-          materials_data: materialsData,
+          materials_data: {
+            materials: materialsData,
+          },
         })
         .select()
         .single();
@@ -241,14 +252,21 @@ export const useCreateWorkflow = () => {
         try {
           console.log('🚀 Starting AI content generation for new workflow...');
           const materialDisplays = materialsData.map((m: any) => toMaterialDisplay(m, true));
-          const aiContent = await WorkflowAIService.generateWorkflowContent(materialDisplays);
+          
+          const { summary, quiz, flashcards, mindMap } = await WorkflowAIService.generateWorkflowContent(materialDisplays);
+          
+          const aiContent = {
+            summary,
+            quiz,
+            flashcards,
+            mindMap
+          };
           
           // Update workflow with AI-generated content
           const { error: updateError } = await supabase
             .from('workflows')
             .update({
               features_used: ['summary', 'quiz', 'flashcards', 'mindmap'],
-              // Store AI content in materials_data for now (could be separate table in future)
               materials_data: {
                 ...workflow.materials_data,
                 ai_content: aiContent
@@ -358,7 +376,7 @@ export const useAddMaterialToWorkflow = () => {
       if (materialError) throw materialError;
       if (!materialData) throw new Error('Material to add not found');
 
-      // Fetch current workflow materials_data
+      // Fetch current workflow data
       const { data: workflowData, error: workflowError } = await supabase
         .from('workflows')
         .select('materials_data')
@@ -368,9 +386,15 @@ export const useAddMaterialToWorkflow = () => {
       if (workflowError) throw workflowError;
       if (!workflowData) throw new Error('Workflow not found');
       
-      const currentMaterials = Array.isArray(workflowData.materials_data) ? workflowData.materials_data : [];
-      // Append new material data and update workflow
-      const newMaterialsData = [...currentMaterials, materialData];
+      let currentMaterials = [];
+      if (workflowData.materials_data && Array.isArray(workflowData.materials_data.materials)) {
+        currentMaterials = workflowData.materials_data.materials;
+      } else if (Array.isArray(workflowData.materials_data)) {
+        // Backwards compatibility for old array format
+        currentMaterials = workflowData.materials_data;
+      }
+      
+      const newMaterialsList = [...currentMaterials, materialData];
       
       // Also insert into join table for consistency with other parts of the app
       const { data, error } = await supabase
@@ -384,29 +408,25 @@ export const useAddMaterialToWorkflow = () => {
 
       if (error) throw error;
 
-      // Update workflow with new materials data
-      const { error: updateError } = await supabase
-        .from('workflows')
-        .update({ materials_data: newMaterialsData })
-        .eq('id', workflowId);
-      
-      if (updateError) throw updateError;
-
-      // Generate updated AI content for the workflow
+      // Generate updated AI content for the workflow and update
       try {
         console.log('🚀 Regenerating AI content for updated workflow...');
-        const materialDisplays = newMaterialsData.map((m: any) => toMaterialDisplay(m, true));
+        const materialDisplays = newMaterialsList.map((m: any) => toMaterialDisplay(m, true));
         const aiContent = await WorkflowAIService.generateWorkflowContent(materialDisplays);
         
-        // Update workflow with new AI-generated content
+        // Prepare new data object for workflow
+        const newWorkflowDataObject = {
+          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data)) ? workflowData.materials_data : {}),
+          materials: newMaterialsList,
+          ai_content: aiContent
+        };
+
+        // Update workflow with new materials data and new AI-generated content
         const { error: aiUpdateError } = await supabase
           .from('workflows')
           .update({
             features_used: ['summary', 'quiz', 'flashcards', 'mindmap'],
-            materials_data: {
-              ...newMaterialsData,
-              ai_content: aiContent
-            }
+            materials_data: newWorkflowDataObject
           })
           .eq('id', workflowId);
 
@@ -417,7 +437,16 @@ export const useAddMaterialToWorkflow = () => {
         }
       } catch (aiError) {
         console.warn('AI content regeneration failed, but material was added:', aiError);
-        // Don't throw error here - material addition should succeed even if AI fails
+        
+        // Still update workflow with the new material even if AI fails
+        const newWorkflowDataObject = {
+          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data)) ? workflowData.materials_data : {}),
+          materials: newMaterialsList,
+        };
+        await supabase
+          .from('workflows')
+          .update({ materials_data: newWorkflowDataObject })
+          .eq('id', workflowId);
       }
 
       await supabase.rpc('log_activity', {
