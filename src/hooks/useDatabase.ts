@@ -178,7 +178,7 @@ export const useMaterialsData = () => {
           return {
             ...m,
             type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
-            status: (m.status === 'active' || m.status === 'archived') ? m.status : 'active',
+            status: (m.status === 'active' || m.status === 'archived') ? m.status as "active" | "archived" : 'active' as "active",
             studyTime: m.study_time || 0,
             usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
             uploadedAt: m.created_at,

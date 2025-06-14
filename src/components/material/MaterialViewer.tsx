@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface MaterialViewerProps {
   material: MaterialDisplay;
   onBack: () => void;
+  onAddToWorkflow?: (material: MaterialDisplay) => void;
 }
 
 interface ChatMessage {
@@ -43,7 +45,7 @@ interface ChatMessage {
   message: string;
 }
 
-const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
+const MaterialViewer = ({ material, onBack, onAddToWorkflow }: MaterialViewerProps) => {
   const [activeTab, setActiveTab] = useState('summary');
   const [chatInput, setChatInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -123,6 +125,12 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
     setShowDeleteConfirm(false);
   };
 
+  const handleAddToWorkflow = () => {
+    if (onAddToWorkflow && material) {
+      onAddToWorkflow(material);
+    }
+  };
+
   const scrollTabs = (direction: 'left' | 'right') => {
     if (tabsListRef.current) {
       const scrollAmount = direction === 'left' ? -150 : 150;
@@ -168,6 +176,7 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
           </Button>
             <Button 
               size={isMobile ? "icon" : "default"}
+              onClick={handleAddToWorkflow}
               className="bg-gradient-to-br from-orange-500 to-amber-500 text-white hover:shadow-lg hover:shadow-orange-200 transition-shadow rounded-full font-semibold"
               title="Add to Workflow"
             >

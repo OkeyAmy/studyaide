@@ -131,7 +131,13 @@ const KnowledgeBase = () => {
   }
 
   if (selectedMaterial) {
-    return <MaterialViewer material={selectedMaterial} onBack={() => setSelectedMaterial(null)} />;
+    return (
+      <MaterialViewer 
+        material={selectedMaterial} 
+        onBack={() => setSelectedMaterial(null)}
+        onAddToWorkflow={(material) => setWorkflowSelectorState({ isOpen: true, material })}
+      />
+    );
   }
 
   return (
