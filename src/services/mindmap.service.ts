@@ -119,7 +119,7 @@ Your task is to extract and organize the content into a **Markdown mindmap**, bu
 File: "${file.name}"
 Type: ${fileSpecificIntro}
 
-### 📥 Required Response Format:
+### 📤 Required Response Format:
 
 # Study Material - ${file.name}(I want a short file name for the file not verbatim of the file name)
 
@@ -262,9 +262,46 @@ export async function regenerateMindmapFromFile(file: File): Promise<string> {
     return generateMindmapFromFile(file, true);
 }
 
+/**
+ * Generate mindmap data from text
+ * @param text The text to generate the mindmap from
+ * @param materialId The ID of the material
+ * @param title The title of the mindmap
+ * @returns The generated mindmap data
+ */
+export const generateMindmapDataFromText = async (
+  text: string,
+  materialId?: string,
+  title?: string
+): Promise<string> => {
+  try {
+    // Simulate API call for mind map generation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Example Mermaid syntax for a mind map
+    const mindmapMarkdown = `
+markmap
+# ${title || 'Mind Map'}
+## Key Concept 1
+### Detail A
+### Detail B
+## Key Concept 2
+### Detail C
+### Detail D
+    `;
+    return mindmapMarkdown;
+  } catch (error: any) {
+    console.error(`Error generating mind map data${materialId ? ` for material ${materialId}` : ''}:`, error);
+    // Using only one argument for toast.error
+    toast.error('Failed to generate mind map. Please try again.');
+    throw new Error('Mind map generation failed: ' + (error.message || 'Unknown error'));
+  }
+};
+
 // Export service object for context usage
 export const mindmapService = {
     generateMindmap,
     generateMindmapFromFile,
-    regenerateMindmapFromFile
-}; 
+    regenerateMindmapFromFile,
+    generateMindmapDataFromText
+};
