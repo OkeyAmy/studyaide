@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { CreateMaterialInput } from '@/types/api';
+import { CreateMaterialInput, MaterialDisplay } from '@/types/api';
 
 // Utility function to sanitize filename for storage
 function sanitizeFileName(fileName: string): string {
@@ -53,6 +53,36 @@ export async function uploadFileToStorage(file: File, userId: string): Promise<s
   }
 }
 
+// Utility function to map raw material data to MaterialDisplay type
+function toMaterialDisplay(m: any, usedInWorkflow: boolean): MaterialDisplay {
+  let parsedContent = undefined;
+  if (m.content_summary) {
+    try {
+      parsedContent = JSON.parse(m.content_summary);
+    } catch (e) {
+      // If it's not valid JSON, treat it as legacy plain text summary
+      console.warn(`Failed to parse content_summary as JSON for material ${m.id}, treating as legacy text`);
+      parsedContent = {
+        summary: m.content_summary, // Use the plain text as summary
+        quiz: null,
+        mindMap: null,
+        flashcards: null,
+        polishedNote: m.content_summary
+      };
+    }
+  }
+
+  return {
+    ...m,
+    type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
+    status: ((m.status === 'active' || m.status === 'archived') ? m.status : 'active') as "active" | "archived",
+    studyTime: m.study_time || 0,
+    usedInWorkflow,
+    uploadedAt: m.created_at,
+    parsedContent
+  };
+}
+
 // Dashboard data hook
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -102,8 +132,7 @@ export const useWorkflowData = () => {
         .select(`
           *,
           workflow_materials(
-            material_id,
-            materials(id, title)
+            materials(*)
           )
         `)
         .eq('user_id', user.id)
@@ -117,7 +146,9 @@ export const useWorkflowData = () => {
       const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
         id: w.id,
         title: w.title,
-        materials: w.workflow_materials?.map((wm: any) => wm.material_id) || [],
+        materials: w.workflow_materials
+          ?.map((wm: any) => (wm.materials ? toMaterialDisplay(wm.materials, true) : null))
+          .filter(Boolean) as MaterialDisplay[] || [],
         featuresUsed: w.features_used || [],
         timeSpent: w.time_spent || 0,
         status: w.status as "active" | "paused" | "completed",
@@ -156,35 +187,7 @@ export const useMaterialsData = () => {
 
       return {
         totalItems: materials?.length || 0,
-        materials: materials?.map(m => {
-          // Try to parse the content_summary as JSON if it exists
-          let parsedContent = undefined;
-          if (m.content_summary) {
-            try {
-              parsedContent = JSON.parse(m.content_summary);
-            } catch (e) {
-              // If it's not valid JSON, treat it as legacy plain text summary
-              console.warn(`Failed to parse content_summary as JSON for material ${m.id}, treating as legacy text`);
-              parsedContent = {
-                summary: m.content_summary, // Use the plain text as summary
-                quiz: null,
-                mindMap: null,
-                flashcards: null,
-                polishedNote: m.content_summary
-              };
-            }
-          }
-
-          return {
-            ...m,
-            type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
-            status: ((m.status === 'active' || m.status === 'archived') ? m.status : 'active') as "active" | "archived",
-            studyTime: m.study_time || 0,
-            usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
-            uploadedAt: m.created_at,
-            parsedContent
-          };
-        }) || []
+        materials: materials?.map(m => toMaterialDisplay(m, (m.workflow_materials?.length || 0) > 0)) || []
       };
     },
     enabled: !!user

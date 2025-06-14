@@ -5,9 +5,9 @@ import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mi
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
-import SessionCard from '@/components/shared/SessionCard';
 import WorkflowCreator from '@/components/workflow/WorkflowCreator';
 import WorkflowContentViewer from '@/components/workflow/WorkflowContentViewer';
+import MaterialViewer from '@/components/material/MaterialViewer';
 import { MaterialDisplay } from '@/types/api';
 import { useWorkflowData, useMaterialsData } from '@/hooks/useDatabase';
 
@@ -17,6 +17,7 @@ const MyWorkflows = () => {
   const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<any | null>(null);
+  const [materialToView, setMaterialToView] = useState<MaterialDisplay | null>(null);
 
   // Get data from database
   const { data: workflowData, isLoading: workflowsLoading } = useWorkflowData();
@@ -89,11 +90,19 @@ const MyWorkflows = () => {
   };
 
   const handleWorkflowClick = (workflow: any) => {
-    setSelectedWorkflow(workflow);
+    if (workflow.materials && workflow.materials.length === 1) {
+      setMaterialToView(workflow.materials[0]);
+    } else {
+      setSelectedWorkflow(workflow);
+    }
   };
 
   const handleBackToWorkflows = () => {
     setSelectedWorkflow(null);
+  };
+
+  const handleBackFromMaterial = () => {
+    setMaterialToView(null);
   };
 
   // --- DELETE WORKFLOW FUNCTION ---
@@ -125,6 +134,10 @@ const MyWorkflows = () => {
       alert('Error deleting workflow: ' + (err?.message || err));
     }
   };
+
+  if (materialToView) {
+    return <MaterialViewer material={materialToView} onBack={handleBackFromMaterial} />;
+  }
 
   // If a workflow is selected, show the detailed view
   if (selectedWorkflow) {
