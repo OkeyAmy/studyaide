@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { noteService } from '@/services/note.service';
 import { summaryService } from '@/services/summary.service';
 import { quizService } from '@/services/quiz.service';
-import { mindmapService } from '@/services/mindmap.service';
+import { mindmapService } from '@/services/mindmap.service'; // This should now work
 import { chatbotService } from '@/services/chatbot.service';
 
 interface AIContextType {
@@ -37,4 +38,4 @@ export const useAI = (): AIContextType => {
     throw new Error('useAI must be used within an AIProvider');
   }
   return context;
-}; 
+};

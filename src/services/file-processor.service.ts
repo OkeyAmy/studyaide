@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAIClient, isAIAvailable, generateStructuredResponse, generateJSONResponse, delay } from './ai.service';
-import { generateFlashcardsFromFile, FlashcardSet } from './flashcard.service';
-import { generateSummaryFromFile } from './summary.service';
-import { generateQuizFromFile, Quiz } from './quiz.service';
-import { generateMindmapFromFile } from './mindmap.service';
+import { generateFlashcardsFromFile, FlashcardSet, generateFlashcards } from './flashcard.service';
+import { generateSummaryFromFile, generateSummary } from './summary.service';
+import { generateQuizFromFile, Quiz, generateQuiz } from './quiz.service';
+import { generateMindmapFromFile, generateMindmap } from './mindmap.service';
 import { StudySessionData } from '@/types/study-session';
 
 // Native Gemini client for multimodal support
@@ -129,20 +129,14 @@ export class FileProcessorService {
       
       // Generate summary
       const summary = await this.generateSummaryWithFallback(file, fileName, content);
-      // Add delay to prevent rate limiting
       await delay(1000);
       
-      // Generate quiz
       const quiz = await this.generateQuizWithFallback(file, fileName, content);
-      // Add delay to prevent rate limiting
       await delay(1000);
       
-      // Generate mind map
-      const mindMap = await this.generateMindMapWithFallback(file, fileName, content);
-      // Add delay to prevent rate limiting
+      const mindMap = await this.generateMindmapWithFallback(file, fileName, content);
       await delay(1000);
       
-      // Generate flashcards
       const flashcards = await this.generateFlashcardsWithFallback(file, fileName, content);
 
       return {
@@ -152,8 +146,8 @@ export class FileProcessorService {
         quiz,
         mindMap,
         flashcards,
-      fileMetadata
-    };
+        fileMetadata
+      };
     } catch (error) {
       console.error(`Error processing ${fileType} file:`, error);
       throw new Error(`Failed to process ${fileType}. Please try again with a different file.`);
@@ -165,15 +159,12 @@ export class FileProcessorService {
    */
   private async generateSummaryWithFallback(file: File | Blob, fileName: string, content: string): Promise<string> {
     try {
-      // If we have a File (not Blob), use the direct file upload approach
       if (file instanceof File) {
         console.log('Using direct file upload for summary generation');
         return await generateSummaryFromFile(file);
       } else {
-        // For Blobs (like recorded audio), fall back to text-based generation
         console.log('Using text-based summary generation for Blob data');
-        const { generateSummary } = await import('./summary.service');
-      return await generateSummary(content);
+        return await generateSummary(content);
       }
     } catch (error) {
       console.warn('Failed to generate summary, using fallback:', error);
@@ -186,15 +177,12 @@ export class FileProcessorService {
    */
   private async generateQuizWithFallback(file: File | Blob, fileName: string, content: string): Promise<Quiz> {
     try {
-      // If we have a File (not Blob), use the direct file upload approach
       if (file instanceof File) {
         console.log('Using direct file upload for quiz generation');
         return await generateQuizFromFile(file);
       } else {
-        // For Blobs (like recorded audio), fall back to text-based generation
         console.log('Using text-based quiz generation for Blob data');
-        const { generateQuiz } = await import('./quiz.service');
-      return await generateQuiz(content);
+        return await generateQuiz(content);
       }
     } catch (error) {
       console.warn('Failed to generate quiz, using fallback:', error);
@@ -205,17 +193,14 @@ export class FileProcessorService {
   /**
    * Generate mindmap with fallback
    */
-  private async generateMindMapWithFallback(file: File | Blob, fileName: string, content: string): Promise<string> {
+  private async generateMindmapWithFallback(file: File | Blob, fileName: string, content: string): Promise<string> {
     try {
-      // If we have a File (not Blob), use the direct file upload approach
       if (file instanceof File) {
         console.log('Using direct file upload for mindmap generation');
-        return await generateMindmapFromFile(file);
+        return await generateMindmapFromFile(file, undefined, fileName);
       } else {
-        // For Blobs (like recorded audio), fall back to text-based generation
         console.log('Using text-based mindmap generation for Blob data');
-        const { generateMindmap } = await import('./mindmap.service');
-      return await generateMindmap(content);
+        return await generateMindmap(content, undefined, fileName);
       }
     } catch (error) {
       console.warn('Failed to generate mindmap, using fallback:', error);
@@ -228,15 +213,12 @@ export class FileProcessorService {
    */
   private async generateFlashcardsWithFallback(file: File | Blob, fileName: string, content: string): Promise<FlashcardSet> {
     try {
-      // If we have a File (not Blob), use the direct file upload approach
       if (file instanceof File) {
         console.log('Using direct file upload for flashcard generation');
         return await generateFlashcardsFromFile(file);
       } else {
-        // For Blobs (like recorded audio), fall back to text-based generation
         console.log('Using text-based flashcard generation for Blob data');
-        const { generateFlashcards } = await import('./flashcard.service');
-      return await generateFlashcards(content);
+        return await generateFlashcards(content);
       }
     } catch (error) {
       console.warn('Failed to generate flashcards, using fallback:', error);
