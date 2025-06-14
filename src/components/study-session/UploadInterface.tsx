@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { Upload, Mic, FileText, Video, AudioLines, File } from 'lucide-react';
+import { Upload, Mic, FileText, Video, AudioLines, File, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VoiceRecorder from './VoiceRecorder';
 
@@ -49,41 +48,51 @@ const UploadInterface = ({ onFileUpload, onAudioRecord }: UploadInterfaceProps) 
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <div className="pulse-chip mb-4 inline-flex">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-pulse-500 text-white mr-2">📚</span>
+        <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-pulse-100/80 to-orange-100/80 backdrop-blur-sm text-pulse-700 px-4 py-2 rounded-full text-sm font-medium mb-6 border border-pulse-200/50 shadow-lg">
+          <div className="w-5 h-5 bg-gradient-to-r from-pulse-500 to-orange-500 rounded-full flex items-center justify-center">
+            <Sparkles className="h-3 w-3 text-white" />
+          </div>
           <span>Start Your Study Session</span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-pulse-600 via-orange-600 to-pink-600 bg-clip-text text-transparent mb-4">
           Upload Your Learning Materials
         </h1>
-        <p className="text-gray-600 text-lg">
-          Drop your files or record live—AI will fold them into study magic
+        <p className="text-gray-700 text-xl font-medium">
+          Drop your files or record live—AI will fold them into study magic ✨
         </p>
       </div>
 
       {/* Recording Toggle */}
       <div className="flex justify-center">
-        <div className="flex items-center space-x-4 bg-white rounded-full p-1 shadow-sm border border-gray-200">
+        <div className="flex items-center space-x-1 bg-white/70 backdrop-blur-sm rounded-full p-1.5 shadow-xl border border-white/30">
           <button
             onClick={() => setIsRecording(false)}
             className={cn(
-              "px-6 py-2 rounded-full text-sm font-medium transition-all duration-200",
+              "px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 relative overflow-hidden",
               !isRecording
-                ? "bg-pulse-500 text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-gradient-to-r from-pulse-500 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 transform"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
             )}
           >
+            {!isRecording && (
+              <div className="absolute inset-0 bg-gradient-to-r from-pulse-400 to-orange-400 opacity-0 hover:opacity-20 transition-opacity duration-300" />
+            )}
+            <Upload className="h-4 w-4 mr-2 inline" />
             Upload Files
           </button>
           <button
             onClick={() => setIsRecording(true)}
             className={cn(
-              "px-6 py-2 rounded-full text-sm font-medium transition-all duration-200",
+              "px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 relative overflow-hidden",
               isRecording
-                ? "bg-pulse-500 text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-105 transform"
+                : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
             )}
           >
+            {isRecording && (
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 hover:opacity-20 transition-opacity duration-300" />
+            )}
+            <Mic className="h-4 w-4 mr-2 inline" />
             Record Live
           </button>
         </div>
@@ -91,7 +100,7 @@ const UploadInterface = ({ onFileUpload, onAudioRecord }: UploadInterfaceProps) 
 
       {/* Main Interface */}
       {!isRecording ? (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           {/* Dropzone */}
           <div
             onDragOver={handleDragOver}
@@ -99,63 +108,97 @@ const UploadInterface = ({ onFileUpload, onAudioRecord }: UploadInterfaceProps) 
             onDrop={handleDrop}
             onClick={handleClick}
             className={cn(
-              "relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 bg-white",
+              "relative border-2 border-dashed rounded-3xl p-16 text-center cursor-pointer transition-all duration-500 group",
               isDragging
-                ? "border-pulse-500 bg-pulse-50 shadow-lg scale-105"
-                : "border-gray-300 hover:border-pulse-400 hover:bg-gray-50"
+                ? "border-pulse-400 bg-gradient-to-br from-pulse-50/80 to-orange-50/80 backdrop-blur-sm shadow-2xl scale-105 transform"
+                : "border-white/40 bg-white/40 backdrop-blur-sm hover:border-pulse-300 hover:bg-white/60 hover:shadow-xl hover:scale-102 transform shadow-lg"
             )}
-            style={{
-              backgroundImage: isDragging ? 'url("data:image/svg+xml,%3csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cg fill=\'none\' fill-rule=\'evenodd\'%3e%3cg fill=\'%23FE5C02\' fill-opacity=\'0.05\'%3e%3cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e")' : undefined
-            }}
           >
             <input
               ref={fileInputRef}
               type="file"
-              accept=".mp3,.wav,.mp4,.mov,.pdf,.docx,.pptx,.txt"
+              accept=".mp3,.wav,.mp4,.mov,.pdf,.txt"
               onChange={handleFileSelect}
               className="hidden"
             />
             
-            <div className="space-y-6">
-              {/* Icon Stack */}
-              <div className="flex justify-center space-x-4">
-                <div className="w-16 h-16 bg-pulse-100 rounded-full flex items-center justify-center">
-                  <AudioLines className="h-8 w-8 text-pulse-600" />
+            <div className="space-y-8">
+              {/* Floating Icon Stack */}
+              <div className="flex justify-center space-x-6">
+                <div className={cn(
+                  "w-20 h-20 bg-gradient-to-r from-pulse-100 to-orange-100 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 border border-pulse-200/50 shadow-lg",
+                  isDragging ? "animate-bounce" : "group-hover:scale-110 group-hover:rotate-3"
+                )}>
+                  <AudioLines className="h-10 w-10 text-pulse-600" />
                 </div>
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Video className="h-8 w-8 text-blue-600" />
+                <div className={cn(
+                  "w-20 h-20 bg-gradient-to-r from-blue-100 to-cyan-100 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 border border-blue-200/50 shadow-lg",
+                  isDragging ? "animate-bounce" : "group-hover:scale-110 group-hover:-rotate-3"
+                )} style={{ animationDelay: '0.1s' }}>
+                  <Video className="h-10 w-10 text-blue-600" />
                 </div>
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-green-600" />
+                <div className={cn(
+                  "w-20 h-20 bg-gradient-to-r from-green-100 to-emerald-100 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 border border-green-200/50 shadow-lg",
+                  isDragging ? "animate-bounce" : "group-hover:scale-110 group-hover:rotate-2"
+                )} style={{ animationDelay: '0.2s' }}>
+                  <FileText className="h-10 w-10 text-green-600" />
                 </div>
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                  <File className="h-8 w-8 text-purple-600" />
+                <div className={cn(
+                  "w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-sm rounded-2xl flex items-center justify-center transition-all duration-300 border border-purple-200/50 shadow-lg",
+                  isDragging ? "animate-bounce" : "group-hover:scale-110 group-hover:-rotate-2"
+                )} style={{ animationDelay: '0.3s' }}>
+                  <File className="h-10 w-10 text-purple-600" />
                 </div>
               </div>
 
-              <div>
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {isDragging ? "Drop it like it's hot!" : "Drag & Drop or Click to Upload"}
-                </h3>
-                <p className="text-gray-500">
-                  MP3, WAV, MP4, PDF, DOCX, PPTX
-                </p>
+              <div className="space-y-4">
+                <div className={cn(
+                  "w-16 h-16 bg-gradient-to-r from-pulse-500 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-xl transition-all duration-300",
+                  isDragging ? "animate-pulse scale-110" : "group-hover:scale-110 group-hover:rotate-12"
+                )}>
+                  <Upload className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-pulse-600 to-orange-600 bg-clip-text text-transparent mb-3">
+                    {isDragging ? "Drop it like it's hot! 🔥" : "Drag & Drop or Click to Upload"}
+                  </h3>
+                  <p className="text-gray-600 font-medium">
+                    MP3, WAV, MP4, PDF, TXT — All welcome here!
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Crinkle effect on hover */}
+            {/* Animated background effect */}
             <div className={cn(
-              "absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-pulse-100/20 rounded-2xl transition-opacity duration-300",
-              isDragging ? "opacity-100" : "opacity-0"
+              "absolute inset-0 bg-gradient-to-br from-pulse-300/10 via-orange-300/10 to-pink-300/10 rounded-3xl transition-all duration-500 pointer-events-none",
+              isDragging ? "opacity-100 animate-pulse" : "opacity-0 group-hover:opacity-50"
             )} />
+            
+            {/* Sparkle effect */}
+            <div className={cn(
+              "absolute inset-0 transition-opacity duration-300",
+              isDragging ? "opacity-100" : "opacity-0"
+            )}>
+              <div className="absolute top-4 left-8 w-2 h-2 bg-pulse-400 rounded-full animate-ping" />
+              <div className="absolute top-12 right-12 w-1.5 h-1.5 bg-orange-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute bottom-8 left-16 w-1 h-1 bg-pink-400 rounded-full animate-ping" style={{ animationDelay: '1s' }} />
+              <div className="absolute bottom-16 right-8 w-2.5 h-2.5 bg-pulse-300 rounded-full animate-ping" style={{ animationDelay: '1.5s' }} />
+            </div>
           </div>
 
           {/* Supported Formats */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Supported formats: Audio (MP3, WAV), Video (MP4, MOV), Documents (PDF, DOCX, PPTX)
-            </p>
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-white/30">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-pulse-400 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+              </div>
+              <p className="text-sm text-gray-600 font-medium">
+                Audio (MP3, WAV) • Video (MP4, MOV) • Documents (PDF, TXT)
+              </p>
+            </div>
           </div>
         </div>
       ) : (

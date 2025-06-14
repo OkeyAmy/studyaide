@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
 import Sidebar from '@/components/navigation/Sidebar';
@@ -6,6 +5,7 @@ import MobileSidebar from '@/components/navigation/MobileSidebar';
 import TopHeader from '@/components/navigation/TopHeader';
 import QuickActions from '@/components/navigation/QuickActions';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,13 +15,22 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children, activeSession = 'dashboard', onSessionChange }: AppLayoutProps) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user } = useAuth();
 
+  const handleSidebarCollapseChange = (isCollapsed: boolean) => {
+    setIsSidebarCollapsed(isCollapsed);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Desktop Sidebar */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Desktop Sidebar - Fixed position */}
       <div className="hidden lg:block">
-        <Sidebar activeSession={activeSession} onSessionChange={onSessionChange} />
+        <Sidebar 
+          activeSession={activeSession} 
+          onSessionChange={onSessionChange}
+          onCollapseChange={handleSidebarCollapseChange}
+        />
       </div>
 
       {/* Mobile Sidebar */}
@@ -32,8 +41,11 @@ const AppLayout = ({ children, activeSession = 'dashboard', onSessionChange }: A
         onSessionChange={onSessionChange}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area - with dynamic left margin based on sidebar state */}
+      <div className={cn(
+        "flex flex-col min-w-0 min-h-screen transition-all duration-300",
+        isSidebarCollapsed ? "lg:ml-16" : "lg:ml-72"
+      )}>
         {/* Top Header */}
         <TopHeader 
           onMobileMenuToggle={() => setIsMobileSidebarOpen(true)}

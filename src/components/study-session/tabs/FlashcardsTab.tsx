@@ -1,30 +1,23 @@
-
 import React, { useState } from 'react';
-import { ChevronUp, Tag } from 'lucide-react';
+import { ChevronUp, Tag, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useStudySession } from '@/contexts/StudySessionContext';
 
 const FlashcardsTab = () => {
+  const { sessionData, generateFlashcards, isGeneratingContent } = useStudySession();
   const [currentCard, setCurrentCard] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Mock flashcard data
-  const flashcards = [
+  // Get flashcards from session data or use fallback
+  const flashcards = sessionData?.flashcards?.cards || [
     {
-      question: "What is Hebbian Learning?",
-      answer: "A theory stating that neurons that fire together wire together, strengthening the synaptic connections between them.",
-      source: "Chapter 5, Neuroinformatics Lecture"
-    },
-    {
-      question: "Define Neural Plasticity",
-      answer: "The brain's ability to reorganize itself by forming new neural connections throughout life, allowing adaptation to new experiences.",
-      source: "Chapter 3, Brain Development"
-    },
-    {
-      question: "What are Action Potentials?",
-      answer: "Electrical impulses that travel along neurons to transmit information throughout the nervous system.",
-      source: "Chapter 2, Neural Communication"
+      question: "What is the main topic of this material?",
+      answer: "This study material covers various educational concepts and topics that have been processed for learning.",
+      source: sessionData?.fileName || "Study Material"
     }
   ];
+
+  const flashcardTitle = sessionData?.flashcards?.title || `Flashcards: ${sessionData?.fileName || 'Study Material'}`;
 
   const nextCard = () => {
     setCurrentCard((prev) => (prev + 1) % flashcards.length);
@@ -48,8 +41,45 @@ const FlashcardsTab = () => {
     }
   };
 
+  const handleGenerateFlashcards = async () => {
+    if (!sessionData?.polishedNote) {
+      return;
+    }
+    await generateFlashcards();
+    setCurrentCard(0);
+    setIsFlipped(false);
+  };
+
+  if (!sessionData?.polishedNote) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <Sparkles className="h-12 w-12 mb-4 text-gray-400" />
+        <p className="text-lg font-medium mb-2">No Content Available</p>
+        <p className="text-sm text-center">Upload a file or record audio to generate flashcards</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{flashcardTitle}</h3>
+          <p className="text-sm text-gray-600">{flashcards.length} cards available</p>
+        </div>
+        {!sessionData.flashcards && (
+          <button
+            onClick={handleGenerateFlashcards}
+            disabled={isGeneratingContent}
+            className="flex items-center space-x-2 px-4 py-2 bg-pulse-500 text-white rounded-lg hover:bg-pulse-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={cn("h-4 w-4", isGeneratingContent && "animate-spin")} />
+            <span>{isGeneratingContent ? 'Generating...' : 'Generate Flashcards'}</span>
+          </button>
+        )}
+      </div>
+
       {/* Progress Indicator */}
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-600">
@@ -81,9 +111,11 @@ const FlashcardsTab = () => {
                 <h3 className="text-xl font-semibold text-gray-900">
                   {flashcards[currentCard].question}
                 </h3>
-                <div className="text-sm text-gray-500">
-                  {flashcards[currentCard].source}
-                </div>
+                {flashcards[currentCard].source && (
+                  <div className="text-sm text-gray-500">
+                    {flashcards[currentCard].source}
+                  </div>
+                )}
               </div>
               <div className="absolute bottom-4 right-4">
                 <Tag className="h-4 w-4 text-gray-400" />
@@ -93,7 +125,7 @@ const FlashcardsTab = () => {
             {/* Back of card */}
             <div className="absolute inset-0 w-full h-full bg-pulse-50 rounded-xl shadow-lg border border-pulse-200 p-6 flex flex-col justify-center rotate-y-180 backface-hidden">
               <div className="text-center space-y-4">
-                <div className="text-sm text-pulse-600 font-medium">Answer</div>
+                {/* <div className="text-sm text-pulse-600 font-medium">Answer</div> */}
                 <p className="text-lg text-gray-900 leading-relaxed">
                   {flashcards[currentCard].answer}
                 </p>
@@ -107,13 +139,15 @@ const FlashcardsTab = () => {
       <div className="flex justify-center space-x-4">
         <button
           onClick={prevCard}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          disabled={flashcards.length <= 1}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
         </button>
         <button
           onClick={nextCard}
-          className="px-4 py-2 bg-pulse-500 text-white rounded-lg hover:bg-pulse-600 transition-colors"
+          disabled={flashcards.length <= 1}
+          className="px-4 py-2 bg-pulse-500 text-white rounded-lg hover:bg-pulse-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
@@ -126,6 +160,19 @@ const FlashcardsTab = () => {
           <span>Swipe up for next • Tap to flip</span>
         </div>
       </div>
+
+      {/* Regenerate Button */}
+      {sessionData.flashcards && (
+        <div className="text-center">
+          <button
+            onClick={handleGenerateFlashcards}
+            disabled={isGeneratingContent}
+            className="text-sm text-pulse-600 hover:text-pulse-700 underline disabled:opacity-50"
+          >
+            {isGeneratingContent ? 'Regenerating...' : 'Regenerate Flashcards'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

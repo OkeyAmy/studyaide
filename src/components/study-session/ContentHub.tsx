@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
 import { Brain, FileText, Network, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCreateMaterial } from '@/hooks/useDatabase';
+import { useCreateMaterial, uploadFileToStorage } from '@/hooks/useDatabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useStudySession } from '@/contexts/StudySessionContext';
 import { toast } from 'sonner';
 import FlashcardsTab from './tabs/FlashcardsTab';
 import SummaryTab from './tabs/SummaryTab';
@@ -16,10 +17,32 @@ interface ContentHubProps {
 
 type TabType = 'flashcards' | 'summary' | 'mindmap' | 'quiz';
 
+// Utility function to extract title from polishedNote markdown headings
+const extractTitleFromPolishedNote = (polishedNote: string): string | null => {
+  if (!polishedNote) return null;
+  
+  // Look for # or ## headings at the beginning of lines
+  const headingRegex = /^#{1,2}\s+(.+)$/m;
+  const match = polishedNote.match(headingRegex);
+  
+  if (match && match[1]) {
+    // Clean up the title (remove extra whitespace, limit length)
+    const title = match[1].trim();
+    // Limit title to 60 characters for better display
+    return title.length > 60 ? title.substring(0, 57) + '...' : title;
+  }
+  
+  return null;
+};
+
 const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('flashcards');
   const [isSaved, setIsSaved] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
   const createMaterial = useCreateMaterial();
+  const { user } = useAuth();
+  const { sessionData } = useStudySession();
 
   const tabs = [
     {
@@ -54,31 +77,103 @@ const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
 
   const handleSaveToHub = async () => {
     try {
+      setIsProcessing(true);
+      setProcessingStep('Preparing to save...');
+      
+      if (!user) {
+        toast.error('You must be logged in to save to Hub');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (!sessionData) {
+        toast.error('No session data available to save');
+        setIsProcessing(false);
+        return;
+      }
+
       // Extract file extension and map to supported types
       const getFileType = (fileName: string) => {
         const extension = fileName.split('.').pop()?.toLowerCase();
         switch (extension) {
           case 'pdf': return 'pdf';
           case 'docx': case 'doc': return 'docx';
-          case 'mp3': case 'wav': case 'm4a': return 'audio';
-          case 'mp4': case 'mov': case 'avi': return 'video';
+          case 'mp3': case 'wav': case 'm4a': case 'aac': case 'ogg': case 'flac': case 'wma': return 'audio';
+          case 'mp4': case 'mov': case 'avi': case 'mkv': case 'webm': case 'wmv': case 'flv': case '3gp': return 'video';
+          case 'jpg': case 'jpeg': case 'png': case 'gif': case 'bmp': case 'svg': case 'webp': return 'image';
           default: return 'other';
         }
       };
 
+      // Extract proper title from polishedNote or fallback to fileName
+      let materialTitle = fileName.replace(/\.[^/.]+$/, ""); // Remove file extension as fallback
+      
+      if (sessionData.polishedNote) {
+        const extractedTitle = extractTitleFromPolishedNote(sessionData.polishedNote);
+        if (extractedTitle) {
+          materialTitle = extractedTitle;
+        }
+      }
+
+      let fileUrl = '';
+      
+      // Upload the raw file to Supabase storage for direct material access
+      // This ensures materials have their own file reference for the MaterialViewer
+      if (sessionData.uploadedFile) {
+        try {
+          setProcessingStep('Uploading file to storage...');
+        fileUrl = await uploadFileToStorage(sessionData.uploadedFile, user.id);
+        } catch (error) {
+          console.error('Error uploading file for material:', error);
+          // Continue without file URL if upload fails
+        }
+      } else if (sessionData.recordedAudio) {
+        try {
+          setProcessingStep('Uploading audio to storage...');
+          // Create audio file from blob for material storage
+          const audioFile = new File([sessionData.recordedAudio], 'recorded-audio.webm', { 
+            type: sessionData.recordedAudio.type 
+          });
+          fileUrl = await uploadFileToStorage(audioFile, user.id);
+        } catch (error) {
+          console.error('Error uploading audio for material:', error);
+          // Continue without file URL if upload fails
+        }
+      }
+
+      // Create content details to store with the material
+      const contentDetails = {
+        summary: sessionData.summary || '',
+        quiz: sessionData.quiz || null,
+        mindMap: sessionData.mindMap || '',
+        flashcards: sessionData.flashcards || null,
+        polishedNote: sessionData.polishedNote || ''
+      };
+
+      // Store the content details as a JSON string in the content_summary field
+      // Both study session and material now have file access for different purposes:
+      // - Study session: For processing tracking and admin purposes
+      // - Material: For direct user access in MaterialViewer
+      setProcessingStep('Saving to Knowledge Hub...');
       await createMaterial.mutateAsync({
-        title: fileName.replace(/\.[^/.]+$/, ""), // Remove file extension
+        title: materialTitle, // Use extracted title or fallback to fileName
         file_type: getFileType(fileName),
-        content_summary: 'AI-generated study materials created from uploaded content.',
+        file_url: fileUrl, // Direct file access for MaterialViewer
+        file_size: sessionData.uploadedFile?.size || sessionData.recordedAudio?.size,
+        content_summary: JSON.stringify(contentDetails), // Store all content as JSON
         tags: ['study-session', 'ai-generated'],
-        headings: ['Summary', 'Key Concepts', 'Practice Questions'],
+        headings: sessionData.summary ? ['Summary', 'Key Concepts', 'Practice Questions'] : [],
         study_time: 1.5
       });
 
       setIsSaved(true);
-      toast.success('Study materials saved to Knowledge Hub!');
+      setIsProcessing(false);
+      setProcessingStep('');
+      toast.success('All study materials saved to Knowledge Hub!');
     } catch (error) {
       console.error('Error saving to Knowledge Hub:', error);
+      setIsProcessing(false);
+      setProcessingStep('');
       toast.error('Failed to save to Knowledge Hub. Please try again.');
     }
   };
@@ -147,7 +242,9 @@ const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">Save to Knowledge Hub</h3>
             <p className="text-sm text-gray-600">
-              {isSaved 
+              {isProcessing 
+                ? processingStep
+                : isSaved 
                 ? 'Your study materials have been saved to your Knowledge Hub'
                 : 'Keep these study materials for future reference'
               }
@@ -155,15 +252,22 @@ const ContentHub = ({ fileName, fileType }: ContentHubProps) => {
           </div>
           <button 
             onClick={handleSaveToHub}
-            disabled={isSaved || createMaterial.isPending}
+            disabled={isSaved || isProcessing}
             className={cn(
-              "px-6 py-2 rounded-lg transition-colors",
+              "px-6 py-2 rounded-lg transition-colors flex items-center space-x-2",
               isSaved 
                 ? "bg-green-500 text-white cursor-not-allowed"
+                : isProcessing
+                  ? "bg-gray-400 text-white cursor-not-allowed"
                 : "bg-pulse-500 text-white hover:bg-pulse-600"
             )}
           >
-            {createMaterial.isPending ? 'Saving...' : isSaved ? 'Saved ✓' : 'Add to Hub'}
+            {isProcessing && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            <span>
+              {isProcessing ? 'Saving...' : isSaved ? 'Saved ✓' : 'Add to Hub'}
+            </span>
           </button>
         </div>
       </div>

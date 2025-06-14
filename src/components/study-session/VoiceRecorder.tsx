@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,17 +16,29 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
+  const cleanupResources = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
+    }
+    
+    analyserRef.current = null;
+    mediaRecorderRef.current = null;
+  };
+
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      cleanupResources();
     };
   }, []);
 
@@ -54,6 +65,8 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         onRecordingComplete(audioBlob);
+        // Clean up resources after processing
+        cleanupResources();
       };
 
       mediaRecorder.start();
@@ -64,7 +77,7 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
       intervalRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
         
-        if (analyserRef.current) {
+        if (analyserRef.current && audioContextRef.current?.state === 'running') {
           const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
@@ -74,25 +87,19 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
 
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      cleanupResources();
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
     }
     
     setIsRecording(false);
     setAudioLevel(0);
+    
+    // Note: cleanupResources() will be called in the onstop handler
   };
 
   const formatDuration = (seconds: number) => {

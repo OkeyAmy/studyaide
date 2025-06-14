@@ -8,23 +8,25 @@ import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
 import WorkflowCreator from '@/components/workflow/WorkflowCreator';
+import WorkflowContentViewer from '@/components/workflow/WorkflowContentViewer';
 import { MaterialDisplay } from '@/types/api';
-import { useWorkflowsData, useMaterialsData } from '@/hooks/useDatabase';
+import { useWorkflowData, useMaterialsData } from '@/hooks/useDatabase';
 
 const MyWorkflows = () => {
   const navigate = useNavigate();
   const [showWorkflowCreator, setShowWorkflowCreator] = useState(false);
   const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<any | null>(null);
 
   // Get data from database
-  const { data: workflowData, isLoading: workflowsLoading } = useWorkflowsData();
+  const { data: workflowData, isLoading: workflowsLoading } = useWorkflowData();
   const { data: materialData } = useMaterialsData();
 
   const stats = [
     {
       label: 'Total Workflows',
-      value: workflowData?.totalItems || 0,
+      value: workflowData?.totalWorkflows || 0,
       icon: Target,
       color: 'bg-gradient-to-r from-pulse-500 to-orange-600',
       trend: '+2 this week',
@@ -32,7 +34,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Active Sessions',
-      value: workflowData?.workflows?.filter(w => w.status === 'active').length || 0,
+      value: workflowData?.activeSessions || 0,
       icon: Play,
       color: 'bg-gradient-to-r from-green-500 to-emerald-600',
       trend: 'In progress',
@@ -40,7 +42,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Completed',
-      value: workflowData?.workflows?.filter(w => w.status === 'completed').length || 0,
+      value: workflowData?.completedWorkflows || 0,
       icon: TrendingUp,
       color: 'bg-gradient-to-r from-purple-500 to-violet-600',
       trend: 'This month',
@@ -48,7 +50,7 @@ const MyWorkflows = () => {
     },
     {
       label: 'Study Hours',
-      value: `${workflowData?.workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0}h`,
+      value: `${workflowData?.studyHours || 0}h`,
       icon: Clock,
       color: 'bg-gradient-to-r from-pink-500 to-rose-600',
       trend: '+8h this week',
@@ -86,6 +88,26 @@ const MyWorkflows = () => {
     setShowCreateOptions(false);
     setShowWorkflowCreator(true);
   };
+
+  const handleWorkflowClick = (workflow: any) => {
+    setSelectedWorkflow(workflow);
+  };
+
+  const handleBackToWorkflows = () => {
+    setSelectedWorkflow(null);
+  };
+
+  // If a workflow is selected, show the detailed view
+  if (selectedWorkflow) {
+    return (
+      <AppLayout activeSession="workflows">
+        <WorkflowContentViewer 
+          workflow={selectedWorkflow} 
+          onBack={handleBackToWorkflows}
+        />
+      </AppLayout>
+    );
+  }
 
   if (workflowsLoading) {
     return (
@@ -186,10 +208,11 @@ const MyWorkflows = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {(workflowData?.workflows || []).map((workflow) => (
+              {(workflowData?.recentWorkflowSessions || []).map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="group bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-500 hover:scale-105"
+                  onClick={() => handleWorkflowClick(workflow)}
+                  className="group bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer"
                 >
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -225,31 +248,34 @@ const MyWorkflows = () => {
                     <div className="grid grid-cols-2 gap-6 text-sm">
                       <div className="space-y-2">
                         <span className="text-gray-500 font-medium">Time Spent</span>
-                        <p className="font-bold text-lg text-gray-900">{workflow.time_spent || 0}h</p>
+                        <p className="font-bold text-lg text-gray-900">{workflow.timeSpent || 0}h</p>
                       </div>
                       <div className="space-y-2">
                         <span className="text-gray-500 font-medium">Features Used</span>
-                        <p className="font-bold text-lg text-gray-900">{workflow.features_used?.length || 0} tools</p>
+                        <p className="font-bold text-lg text-gray-900">{workflow.featuresUsed?.length || 0} tools</p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {(workflow.features_used || []).slice(0, 3).map((feature, index) => (
+                      {(workflow.featuresUsed || []).slice(0, 3).map((feature, index) => (
                         <Badge key={index} variant="outline" className="text-xs bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full">
                           {feature}
                         </Badge>
                       ))}
-                      {(workflow.features_used?.length || 0) > 3 && (
-                        <Badge variant="outline" className="text-xs bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full">
-                          +{(workflow.features_used?.length || 0) - 3}
-                        </Badge>
+                      {(workflow.featuresUsed?.length || 0) > 3 && (
+                                                  <Badge variant="outline" className="text-xs bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full">
+                            +{(workflow.featuresUsed?.length || 0) - 3}
+                          </Badge>
                       )}
                     </div>
 
                     <div className="flex space-x-3 pt-2">
                       {workflow.status !== 'completed' && (
                         <Button
-                          onClick={() => handleWorkflowAction(workflow.id, workflow.status === 'active' ? 'pause' : 'play')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleWorkflowAction(workflow.id, workflow.status === 'active' ? 'pause' : 'play');
+                          }}
                           disabled={activeWorkflow === workflow.id}
                           className="flex-1 bg-gradient-to-r from-pulse-500 to-orange-600 hover:from-pulse-600 hover:to-orange-700 text-white shadow-lg rounded-2xl"
                           size="sm"
@@ -272,20 +298,25 @@ const MyWorkflows = () => {
                           )}
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" className="px-4 bg-white/60 backdrop-blur-sm border-white/20 hover:bg-white/80 rounded-2xl">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="px-4 bg-white/60 backdrop-blur-sm border-white/20 hover:bg-white/80 rounded-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </div>
 
                     <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                      Updated {new Date(workflow.updated_at).toLocaleDateString()}
+                      Created {new Date(workflow.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {(!workflowData?.workflows || workflowData.workflows.length === 0) && (
+            {(!workflowData?.recentWorkflowSessions || workflowData.recentWorkflowSessions.length === 0) && (
               <div className="text-center py-16">
                 <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-12 shadow-xl border border-white/20 max-w-md mx-auto">
                   <Target className="h-16 w-16 text-gray-400 mx-auto mb-6" />

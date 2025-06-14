@@ -1,0 +1,469 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+Objective: Extend an existing TypeScript-based voice note and file application so that after user has uploaded file or recored live on this route /study-session application. You should replace the native @google/genai SDK with the openai SDK, configured to use Google's Gemini API via its OpenAI compatibility endpoint.
+
+Core Features to Implement:
+
+AI Service Abstraction: Create a centralized service for all AI interactions. This service will configure the openai client to connect to the Gemini API.
+
+Model: 'gemini-2.5-flash-preview-04-17'
+
+SDK: openai (TypeScript/JavaScript).
+
+Endpoint: Google's OpenAI-compatible baseURL.
+
+Voice Polishing: intergrate  getPolishedNote function to use the AI service so that where the user uses voice it uses this feature to get a polished voice note of what the user has recorded.
+
+Summary Generation: Create a dedicated service that takes the polished note content and generates a concise, bullet-point summary.
+
+Quiz Generation: Create a service that generates a multiple-choice quiz based on the note's content. The output should be in a structured format (like JSON) for easy parsing and display in the UI.
+
+Mind Map Generation: Create a service that generates a mind map from the note's content. The output must be in Mermaid.js graph syntax within a Markdown code block, which can then be rendered visually on the front end.
+
+Context-Aware Chatbot: Implement a chatbot that can answer user questions based only on the content of the currently selected note. This will function as a simple Retrieval-Augmented Generation (RAG) system.
+
+Code Structure:
+
+All new AI-powered features (Summary, Quiz, Mind Map, Chatbot) should be implemented in separate, modular service files for better organization and maintainability (e.g., summary.service.ts, quiz.service.ts, etc.).
+
+Now, let's execute on that fixed prompt.
+
+Plan of Action & Important Considerations
+
+Critical Issue: Audio Transcription: The OpenAI chat.completions endpoint is text-only. Your original code cleverly sends audio data using the inlineData property, which is a feature of the native @google/genai SDK's generateContent method. You cannot send raw audio data through the OpenAI SDK compatibility layer.
+
+Solution: We will keep the audio transcription part (getTranscription) using the native @google/genai SDK as it is the only way to process audio directly with Gemini in this manner. All other text-based tasks (polishing, summary, quiz, etc.) will be refactored to use the new openai SDK service. This hybrid approach is the best way to meet all your requirements.
+
+File Structure: We will create a services directory to hold all our new, modular AI logic.
+
+/src
+├── services/
+│   ├── ai.service.ts         # Central OpenAI SDK setup for Gemini
+│   ├── note.service.ts       # Polishing and the original transcription
+│   ├── summary.service.ts    # Summary generation logic
+│   ├── quiz.service.ts       # Quiz generation logic
+│   ├── mindmap.service.ts    # Mind map generation logic
+│   └── chatbot.service.ts    # Chatbot (RAG) logic
+└── VoiceNotesApp.ts          # The main application class (refactored)
+
+Step 1: Create the Central AI Service
+
+This service configures the OpenAI client to point to Gemini.
+
+src/services/ai.service.ts
+
+import OpenAI from "openai";
+
+// Ensure you have your Gemini API Key in your environment variables
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
+if (!geminiApiKey) {
+    throw new Error("GEMINI_API_KEY environment variable not set.");
+}
+
+/**
+ * This is the central AI client, configured to use the OpenAI SDK
+ * with the Google Gemini API compatibility endpoint.
+ *
+ * All text-based generation services (summary, quiz, etc.) will use this instance.
+ */
+export const openai = new OpenAI({
+    apiKey: geminiApiKey,
+    baseURL: "https://generativelanguage.googleapis.com/v1beta",
+});
+
+/**
+ * This is the model we'll use for all text generation tasks.
+ * Gemini 1.5 Flash is fast and cost-effective.
+ * The 'models/' prefix is required for the OpenAI compatibility endpoint.
+ */
+export const GEMINI_MODEL = 'models/gemini-1.5-flash-latest';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Step 2: Create Feature-Specific Services (Separated Files)
+Note Service (Polishing & Transcription)
+
+This file will handle polishing the text (using the new openai SDK) and will also contain the original transcription function (using the @google/genai SDK) because it needs to process audio.
+
+src/services/note.service.ts
+
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { openai, GEMINI_MODEL } from './ai.service.ts';
+
+// We still need the GoogleGenAI client specifically for audio transcription
+const googleGenAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+/**
+ * Transcribes audio using the native GoogleGenAI SDK because it supports multimodal input (audio).
+ * The OpenAI compatibility endpoint does not support this.
+ * @param base64Audio The base64-encoded audio data.
+ * @param mimeType The MIME type of the audio.
+ * @returns The raw transcription text.
+ */
+export async function transcribeAudio(base64Audio: string, mimeType: string): Promise<string> {
+    const model = googleGenAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `Transcribe the provided audio exactly as spoken, preserving every nuance. The recording may include English, Igbo, Yoruba, Hausa, and Nigerian Pidgin. Provide only the raw, unedited speech content.`;
+
+    const result = await model.generateContent([prompt, { inlineData: { mimeType, data: base64Audio } }]);
+    return result.response.text();
+}
+
+/**
+ * Polishes the raw transcription using the OpenAI SDK (connected to Gemini).
+ * @param rawText The raw transcription text.
+ * @returns A polished, markdown-formatted string.
+ */
+export async function polishNote(rawText: string): Promise<string> {
+    const prompt = `Polish and format this raw transcription text using markdown. It may contain a mix of English, Igbo, Yoruba, Hausa, and Nigerian Pidgin. Preserve linguistic nuances, remove filler words, correct grammar without altering meaning, and format for readability (headings, lists, bold). Do NOT include any meta-commentary.
+
+Raw transcription:
+${rawText}`;
+
+    const response = await openai.chat.completions.create({
+        model: GEMINI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+    });
+
+    return response.choices[0].message.content ?? "";
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Summary Service
+
+src/services/summary.service.ts
+
+import { openai, GEMINI_MODEL } from './ai.service.ts';
+
+/**
+ * Generates a flashcard-style summary from the note's text.
+ * @param noteText The polished text of the note.
+ * @returns A markdown-formatted summary string.
+ */
+export async function generateSummary(noteText: string): Promise<string> {
+    const prompt = `Create a flashcard-style summary of the following text. Extract 3-5 key points. Format each as a bullet point with a bolded heading, followed by a brief explanation. Preserve the original language(s). Do NOT add any intro/outro commentary.
+
+Text to summarize:
+${noteText}`;
+
+    const response = await openai.chat.completions.create({
+        model: GEMINI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+    });
+
+    return response.choices[0].message.content ?? "";
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Quiz Service
+
+src/services/quiz.service.ts
+
+import { openai, GEMINI_MODEL } from './ai.service.ts';
+
+export interface QuizQuestion {
+    question: string;
+    options: string[];
+    correctAnswer: string;
+}
+
+/**
+ * Generates a multiple-choice quiz from the note's text.
+ * @param noteText The polished text of the note.
+ * @returns An array of quiz questions.
+ */
+export async function generateQuiz(noteText: string): Promise<QuizQuestion[]> {
+    const prompt = `Based on the following text, generate a 3-5 question multiple-choice quiz.
+Provide the output as a valid JSON array of objects. Each object must have three properties: "question" (string), "options" (an array of 4 strings), and "correctAnswer" (a string that exactly matches one of the options). Do not include any other text or markdown formatting outside of the JSON.
+
+Text to create quiz from:
+${noteText}`;
+
+    const response = await openai.chat.completions.create({
+        model: GEMINI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+        response_format: { type: "json_object" }, // Ask for JSON output
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+        return [];
+    }
+    try {
+        // The AI might wrap the array in a parent object, so we look for the array.
+        const parsedJson = JSON.parse(content);
+        return parsedJson.quiz || parsedJson.questions || parsedJson; // Handle different possible root keys
+    } catch (error) {
+        console.error("Failed to parse quiz JSON:", error);
+        return []; // Return empty array on failure
+    }
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Mind Map Service
+
+src/services/mindmap.service.ts
+
+import { openai, GEMINI_MODEL } from './ai.service.ts';
+
+/**
+ * Generates a mind map in Mermaid.js syntax from the note's text.
+ * @param noteText The polished text of the note.
+ * @returns A string containing Mermaid.js graph syntax inside a markdown code block.
+ */
+export async function generateMindMap(noteText: string): Promise<string> {
+    const prompt = `Analyze the following text and generate a mind map representing its key concepts, relationships, and hierarchies.
+The output MUST be a valid Mermaid.js 'graph TD' or 'graph LR' syntax inside a Markdown code block.
+Do not include any explanation or text outside the \`\`\`mermaid ... \`\`\` block.
+
+Example format:
+\`\`\`mermaid
+graph TD;
+    A[Main Topic] --> B(Concept 1);
+    A --> C(Concept 2);
+    B --> D[Detail 1.1];
+    B --> E[Detail 1.2];
+\`\`\`
+
+Text to create mind map from:
+${noteText}`;
+
+    const response = await openai.chat.completions.create({
+        model: GEMINI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.6,
+    });
+
+    return response.choices[0].message.content ?? "```mermaid\ngraph TD;\n  A[Error generating mind map];\n```";
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Chatbot Service (RAG)
+
+src/services/chatbot.service.ts
+
+import { openai, GEMINI_MODEL } from './ai.service.ts';
+import { ChatCompletionMessageParam } from 'openai/resources';
+
+/**
+ * Gets a response from the chatbot based on a user's question and the note's content.
+ * @param noteContext The full text of the current note.
+ * @param history The previous chat messages for context.
+ * @param question The user's new question.
+ * @returns The AI's response as a string.
+ */
+export async function getChatbotResponse(noteContext: string, history: ChatCompletionMessageParam[], question: string): Promise<string> {
+    const systemPrompt = `You are a helpful assistant. Your task is to answer questions based *only* on the provided "Note Context".
+If the answer is not found in the context, you must state "I'm sorry, I can't answer that based on the provided note."
+Do not use any external knowledge. Be concise and directly answer the user's question.`;
+
+    const userPrompt = `Note Context:
+---
+${noteContext}
+---
+User Question: ${question}`;
+
+    const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        ...history, // Spread the existing history
+        { role: "user", content: userPrompt },
+    ];
+
+    const response = await openai.chat.completions.create({
+        model: GEMINI_MODEL,
+        messages: messages,
+        temperature: 0.3,
+    });
+
+    return response.choices[0].message.content ?? "Sorry, I couldn't generate a response.";
+}
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Step 3: Refactor VoiceNotesApp.ts to Use the New Services
+
+Now, you'll modify your main application class. I'll show the key changed methods.
+
+VoiceNotesApp.ts (Modified Sections)
+
+// ... other imports
+import { marked } from 'marked';
+// Import your new services
+import { transcribeAudio, polishNote } from './services/note.service';
+import { generateSummary } from './services/summary.service';
+// ... import other services like quiz, mindmap, chatbot as you build the UI for them
+
+// REMOVE: this.genAI property and its initialization from the constructor.
+
+// ... inside the VoiceNotesApp class
+
+  private async getTranscription(base64Audio: string, mimeType: string): Promise<void> {
+    try {
+      this.recordingStatus.textContent = 'Getting transcription...';
+
+      // Use the service function for transcription
+      const transcriptionText = await transcribeAudio(base64Audio, mimeType);
+
+      if (transcriptionText) {
+        this.rawTranscription.textContent = transcriptionText;
+        if (this.currentNote) this.currentNote.rawTranscription = transcriptionText;
+        this.recordingStatus.textContent = 'Transcription complete. Polishing note...';
+        
+        // Now call the new getPolishedNote method
+        await this.getPolishedNote();
+      } else {
+        // ... error handling
+      }
+    } catch (error) {
+        // ... error handling
+    }
+  }
+
+  private async getPolishedNote(): Promise<void> {
+    try {
+        const rawText = this.rawTranscription.textContent;
+        if (!rawText || rawText.trim() === '') {
+            // ... handle empty transcription
+            return;
+        }
+
+        this.recordingStatus.textContent = 'Polishing note...';
+        
+        // Use the service function for polishing
+        const polishedText = await polishNote(rawText);
+        
+        if (polishedText) {
+            const htmlContent = marked.parse(polishedText);
+            this.polishedNote.innerHTML = htmlContent;
+            if (this.currentNote) {
+              this.currentNote.polishedNote = polishedText;
+              // ... save note logic
+            }
+            // ... logic to extract title, etc.
+            this.recordingStatus.textContent = 'Note polished.';
+        } else {
+            // ... error handling
+        }
+    } catch (error) {
+        // ... error handling
+    }
+  }
+
+  private async generateSummary(): Promise<void> {
+    // ... (guard clauses for isProcessingSummary and currentNote content)
+    
+    this.isProcessingSummary = true;
+    this.summaryContent.innerHTML = `<div>Generating...</div>`;
+    
+    try {
+        // Use the service function for summary
+        const summaryText = await generateSummary(this.currentNote!.polishedNote);
+        
+        if (summaryText) {
+            if (this.currentNote) this.currentNote.summary = summaryText;
+            // ... update UI and save note
+            const htmlContent = `...`; // your UI with the summary and translate buttons
+            this.summaryContent.innerHTML = htmlContent;
+        } else {
+            // ... error handling
+        }
+    } catch (error) {
+        // ... error handling
+    } finally {
+        this.isProcessingSummary = false;
+    }
+  }
+
+  // You would add new methods to call the other services
+  private async showQuiz(): Promise<void> {
+    // 1. Get quiz data from the service
+    const quizData = await generateQuiz(this.currentNote.polishedNote);
+    // 2. Render the quizData in your UI (e.g., in a modal or a new tab)
+    console.log(quizData);
+  }
+
+  private async showMindMap(): Promise<void> {
+    // 1. Get mind map data
+    const mindMapMarkdown = await generateMindMap(this.currentNote.polishedNote);
+    // 2. You need a library like Mermaid.js to render this.
+    //    Find the div where you want to display the map.
+    const mermaidContainer = document.getElementById('mindmap-container');
+    if (mermaidContainer) {
+        // The service returns the full markdown block, so we extract the code
+        const mermaidCode = mindMapMarkdown.replace(/```mermaid\n?/, '').replace(/```$/, '');
+        const { svg } = await mermaid.render('mindmap-svg', mermaidCode);
+        mermaidContainer.innerHTML = svg;
+    }
+  }
+
+  // For the chatbot, you would manage state (history) in your UI component
+  // and call the service on message submit.
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+TypeScript
+IGNORE_WHEN_COPYING_END
+Next Steps & How to Use
+
+Installation:
+
+npm install openai @google/generative-ai marked
+# For mind maps
+npm install mermaid
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Bash
+IGNORE_WHEN_COPYING_END
+
+Environment: Create a .env file in your project root and add your Gemini API key:
+
+GEMINI_API_KEY=your_google_ai_studio_api_key
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+IGNORE_WHEN_COPYING_END
+
+Ensure your build process (e.g., Vite, Webpack) is configured to use this.
+
+UI for New Features:
+
+Quiz: Add a "Generate Quiz" button. When clicked, call your showQuiz method, and then use the returned JSON to dynamically create HTML elements for the questions and options.
+
+Mind Map: Add a "Generate Mind Map" button and a container div (<div id="mindmap-container"></div>). When clicked, call showMindMap. You will need to initialize Mermaid.js on your page: mermaid.initialize({ startOnLoad: false });.
+
+
+
+Chatbot: Create a chat interface (an input box, a submit button, and a message display area). When the user sends a message, you'll call getChatbotResponse, passing the current note's text, the chat history, and the new question. Then, append both the user's question and the AI's response to the display area and update your chat history state.

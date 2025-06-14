@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,27 +10,52 @@ import {
   Eye, 
   ArrowLeft,
   Download,
-  Clock,
-  Tag as TagIcon,
-  Send
+  Trash2,
+  ExternalLink,
+  Plus,
+  Send,
+  MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import { MaterialDisplay } from '@/types/api';
+import FilePreviewer from './FilePreviewer';
+import MaterialSummaryTab from './tabs/MaterialSummaryTab';
+import MaterialQuizTab from './tabs/MaterialQuizTab';
+import MaterialFlashcardsTab from './tabs/MaterialFlashcardsTab';
+import MaterialMindMapTab from './tabs/MaterialMindMapTab';
+import { useDeleteMaterial } from '@/hooks/useDatabase';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface MaterialViewerProps {
   material: MaterialDisplay;
   onBack: () => void;
 }
 
+interface ChatMessage {
+  id: number;
+  type: 'user' | 'ai';
+  message: string;
+}
+
 const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
-  const [activeTab, setActiveTab] = useState('viewer');
+  const [activeTab, setActiveTab] = useState('summary');
   const [chatInput, setChatInput] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: 1, type: 'ai', message: `Hey! How can I help you with "${material?.title || 'this material'}"?` }
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const deleteMaterial = useDeleteMaterial();
+  const [fileLoading, setFileLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const tools = [
-    { id: 'viewer', label: 'Raw File', icon: Eye, description: 'View original material' },
-    { id: 'summary', label: 'Summary', icon: FileText, description: 'AI-generated summary' },
-    { id: 'mindmap', label: 'Mind Map', icon: Network, description: 'Visual concept map' },
-    { id: 'quiz', label: 'Quiz', icon: HelpCircle, description: 'Test your knowledge' },
-    { id: 'chatbot', label: 'AI Chatbot', icon: Brain, description: 'Ask questions about this material' }
+    { id: 'summary', label: 'Summary', icon: FileText },
+    { id: 'quiz', label: 'Quiz', icon: HelpCircle },
+    { id: 'flashcards', label: 'Flashcards', icon: Brain },
+    { id: 'mindmap', label: 'Mind Map', icon: Network },
+    { id: 'chatbot', label: 'Chat', icon: MessageSquare },
   ];
 
   const getFileTypeIcon = (type: string) => {
@@ -40,188 +64,235 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
       case 'docx': return '📝';
       case 'audio': return '🎵';
       case 'video': return '🎥';
+      case 'image': return '🖼️';
       default: return '📁';
     }
   };
 
-  // Safe access to material properties with fallbacks
   const safeFileType = material?.file_type || material?.type || 'other';
-  const safeStudyTime = material?.study_time || material?.studyTime || 0;
-  const safeUsedInWorkflow = material?.usedInWorkflow || false;
   const safeCreatedAt = material?.created_at || material?.uploadedAt || new Date().toISOString();
+  const savedContent = material?.parsedContent || {};
+  const hasContent = savedContent && Object.keys(savedContent).length > 0;
+
+  useEffect(() => {
+    if (material?.file_url) {
+      setFileLoading(true);
+      setLoadError(false);
+      
+      const timer = setTimeout(() => {
+        setFileLoading(false);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [material?.file_url]);
 
   const handleSendMessage = () => {
     if (chatInput.trim()) {
-      console.log('Sending message:', chatInput);
+      const userMessage: ChatMessage = { id: Date.now(), type: 'user', message: chatInput.trim() };
+      setChatMessages(prev => [...prev, userMessage]);
       setChatInput('');
+      setIsTyping(true);
+      setTimeout(() => {
+        const aiMessage: ChatMessage = { id: Date.now() + 1, type: 'ai', message: `That's a great question! Let me check the document...` };
+        setChatMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+      }, 1500);
     }
   };
 
+  const handleDownload = () => {
+    if (material?.file_url) window.open(material.file_url, '_blank');
+  };
+
+  const handleDelete = async () => {
+    if (!material?.id) return;
+    try {
+      await deleteMaterial.mutateAsync(material.id);
+      toast.success('Material deleted successfully');
+      onBack();
+    } catch (error) { toast.error('Failed to delete material'); }
+    setShowDeleteConfirm(false);
+  };
+
+  const docs = material?.file_url ? [{ uri: material.file_url, fileName: material.title || 'document', fileType: safeFileType }] : [];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="bg-orange-50/30 p-4 h-screen w-full flex flex-col font-sans">
+      {/* Header - Redesigned with white background */}
+      <header className="bg-white rounded-3xl border border-gray-200/80 shadow-md p-4 mb-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button 
             variant="ghost" 
+              size="icon" 
             onClick={onBack} 
-            className="p-3 rounded-full bg-white/80 backdrop-blur-sm shadow-lg hover:bg-white/90 transition-all"
+              className="bg-orange-50 hover:bg-orange-100 rounded-full h-10 w-10 text-orange-600"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <span className="text-3xl">{getFileTypeIcon(safeFileType)}</span>
-              <h1 className="text-3xl font-bold text-gray-900">{material?.title || 'Untitled'}</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="capitalize bg-white/60 backdrop-blur-sm">
-                {safeFileType}
-              </Badge>
-              <div className="flex items-center space-x-1 text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm">{safeStudyTime}h study time</span>
+            
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white">
+                <BookOpen className="h-5 w-5" />
               </div>
-              <Badge className={safeUsedInWorkflow ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                {safeUsedInWorkflow ? 'In Workflow' : 'Standalone'}
-              </Badge>
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">{material?.title || 'Untitled'}</h1>
+                <p className="text-sm text-gray-500">Added {new Date(safeCreatedAt).toLocaleDateString()}</p>
             </div>
           </div>
         </div>
         
-        <div className="flex space-x-3">
-          <Button variant="outline" className="bg-white/80 backdrop-blur-sm border-white/20 hover:bg-white/90">
-            <Download className="h-4 w-4 mr-2" />
-            Download
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirm(true)} 
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200/80 hover:border-red-300 rounded-full hidden sm:flex"
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Delete
           </Button>
-          <Button className="bg-gradient-to-r from-pulse-500 to-pink-500 hover:from-pulse-600 hover:to-pink-600 text-white shadow-lg">
-            Add to Workflow
+            <Button 
+              className="bg-gradient-to-br from-orange-500 to-amber-500 text-white hover:shadow-lg hover:shadow-orange-200 transition-shadow rounded-full font-semibold"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add to Workflow
           </Button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Material Info Card */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Material Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">Tags</h4>
-            <div className="flex flex-wrap gap-2">
-              {(material?.tags || []).map((tag, index) => (
-                <Badge key={index} variant="secondary" className="text-sm bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200">
-                  <TagIcon className="h-3 w-3 mr-1" />
-                  {tag}
-                </Badge>
-              ))}
+      {/* Delete Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Material</h3>
+            <p className="text-gray-600 my-2">Are you sure you want to delete "{material?.title}"? This cannot be undone.</p>
+            <div className="flex space-x-3 justify-end mt-4">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="rounded-full">Cancel</Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleteMaterial.isPending} className="rounded-full">
+                {deleteMaterial.isPending ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
             </div>
           </div>
-          
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">Key Topics</h4>
-            <ul className="space-y-2">
-              {(material?.headings || []).map((heading, index) => (
-                <li key={index} className="text-sm text-gray-600 flex items-center">
-                  <span className="w-2 h-2 bg-gradient-to-r from-pulse-500 to-pink-500 rounded-full mr-3"></span>
-                  {heading}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
-      </div>
+      )}
 
-      {/* Split Screen Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-400px)]">
-        {/* Left Side - Raw File Display */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="p-6 border-b border-gray-100/50">
-            <h3 className="text-xl font-semibold text-gray-900">Display Raw File</h3>
-          </div>
-          <div className="p-8 h-full flex flex-col items-center justify-center text-center">
-            <div className="text-8xl mb-6">{getFileTypeIcon(safeFileType)}</div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">{material?.title || 'Untitled'}</h3>
-            <p className="text-gray-600 mb-6">
-              {safeFileType.toUpperCase()} • Uploaded {new Date(safeCreatedAt).toLocaleDateString()}
-            </p>
-            <Button className="bg-gradient-to-r from-pulse-500 to-pink-500 hover:from-pulse-600 hover:to-pink-600 text-white shadow-lg">
-              Open {safeFileType.toUpperCase()}
-            </Button>
-          </div>
+      {/* Main Content */}
+      <main className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        {/* Left Panel: File Viewer */}
+        <div className="bg-white/60 rounded-3xl border border-gray-200/80 shadow-lg shadow-orange-100/50 flex flex-col overflow-hidden">
+            {material?.file_url ? (
+              <div className="w-full h-full relative">
+                {fileLoading ? (
+                  <FilePreviewer 
+                    fileUrl={material.file_url} 
+                    fileName={material.title} 
+                    fileType={safeFileType} 
+                    isLoading={true} 
+                  />
+                ) : safeFileType === 'pdf' ? (
+                  <iframe
+                    src={`${material.file_url}#view=fitH&toolbar=0`} 
+                    className="w-full h-full border-0"
+                    title={material.title}
+                    onError={() => setLoadError(true)}
+                  />
+                ) : safeFileType === 'video' ? (
+                    <video
+                      src={material.file_url}
+                      controls
+                    className="w-full h-full object-contain bg-gray-900"
+                    onError={() => setLoadError(true)}
+                  />
+                ) : safeFileType === 'audio' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-orange-50 p-8">
+                    <div className="text-6xl mb-4">🎵</div>
+                    <audio
+                      src={material.file_url}
+                      controls
+                      className="w-full max-w-md"
+                      onError={() => setLoadError(true)}
+                    />
+                  </div>
+                ) : safeFileType === 'image' ? (
+                    <img
+                      src={material.file_url}
+                      alt={material.title}
+                    className="w-full h-full object-contain p-2" 
+                    onError={() => setLoadError(true)}
+                  />
+                ) : (
+                  <FilePreviewer 
+                    fileUrl={material.file_url!} 
+                    fileName={material.title} 
+                    fileType={safeFileType} 
+                    loadError={loadError} 
+                  />
+                )}
+                {!fileLoading && !loadError && safeFileType !== 'other' && (
+                  <Button size="sm" onClick={() => window.open(material.file_url, '_blank')} className="absolute bottom-4 right-4 bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 rounded-full">
+                    <ExternalLink className="h-4 w-4 mr-2" /> Open Original
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="p-8 flex flex-col items-center justify-center text-center h-full text-gray-500">
+                <Eye className="h-16 w-16 mb-4 text-orange-300" />
+                <h3 className="font-semibold text-gray-700">No Preview Available</h3>
+                <p className="text-sm">We can't display this file, but you can download it.</p>
+              </div>
+            )}
         </div>
 
-        {/* Right Side - AI Tools */}
-        <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl shadow-xl border border-white/20 overflow-hidden text-white">
-          <div className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-              <TabsList className="grid w-full grid-cols-5 bg-white/20 backdrop-blur-sm">
-                {tools.map((tool) => {
-                  const Icon = tool.icon;
-                  return (
-                    <TabsTrigger 
-                      key={tool.id} 
-                      value={tool.id}
-                      className="flex flex-col items-center p-2 data-[state=active]:bg-white/30 data-[state=active]:text-white text-white/80"
-                    >
-                      <Icon className="h-4 w-4 mb-1" />
-                      <span className="text-xs">{tool.label}</span>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-
-              <div className="mt-6 h-[calc(100%-80px)]">
-                {tools.map((tool) => (
-                  <TabsContent key={tool.id} value={tool.id} className="h-full">
-                    {tool.id === 'chatbot' ? (
+        {/* Right Panel: Study Tools */}
+        <div className="bg-white/60 rounded-3xl border border-gray-200/80 shadow-lg shadow-orange-100/50 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+            <div className="p-3 border-b border-gray-200/60">
+                <TabsList className="grid w-full grid-cols-5 gap-2 bg-orange-100/50 p-1.5 rounded-full">
+                    {tools.map((tool) => (
+                        <TabsTrigger key={tool.id} value={tool.id} className="text-sm font-semibold text-orange-900/70 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-md rounded-full flex items-center gap-2 py-2 transition-all duration-300">
+                            <tool.icon className="h-4 w-4" /> {tool.label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                        </div>
+            <div className="flex-1 overflow-y-auto">
+              <TabsContent value="summary"><MaterialSummaryTab content={savedContent} material={material} /></TabsContent>
+              <TabsContent value="quiz"><MaterialQuizTab content={savedContent} material={material} /></TabsContent>
+              <TabsContent value="flashcards"><MaterialFlashcardsTab content={savedContent} material={material} /></TabsContent>
+              <TabsContent value="mindmap"><MaterialMindMapTab content={savedContent} material={material} /></TabsContent>
+              <TabsContent value="chatbot" className="m-0 h-full">
                       <div className="h-full flex flex-col">
-                        <div className="flex-1 p-6 text-center">
-                          <h3 className="text-2xl font-bold mb-4">AI Chatbot</h3>
-                          <p className="text-white/80 mb-8">
-                            This is where the placeholder for the chatbot, quiz, summary will show
-                          </p>
-                          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-left">
-                            <p className="text-sm text-white/70 mb-2">AI Assistant:</p>
-                            <p className="text-white">How can I help you understand this material better?</p>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {chatMessages.map((message) => (
+                          <div key={message.id} className={cn("flex items-end gap-2", message.type === 'user' ? "justify-end" : "justify-start")}>
+                            {message.type === 'ai' && <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white flex-shrink-0"><Brain size={16}/></div>}
+                            <div className={cn("max-w-[80%] p-3 px-4 rounded-2xl", message.type === 'user' ? "bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-br-none" : "bg-gray-100 text-gray-800 rounded-bl-none")}>
+                              <p className="text-sm">{message.message}</p>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Chat Input */}
-                        <div className="p-4 bg-white/10 backdrop-blur-sm">
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="text"
-                              value={chatInput}
-                              onChange={(e) => setChatInput(e.target.value)}
-                              placeholder="Ask Anything..."
-                              className="flex-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-6 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                            />
-                            <Button
-                              onClick={handleSendMessage}
-                              className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 p-3 rounded-full shadow-lg"
-                            >
-                              <Send className="h-5 w-5" />
+                        ))}
+                        {isTyping && <div className="flex justify-start"><div className="bg-gray-100 p-3 rounded-2xl rounded-bl-none"><div className="typing-indicator"><span></span><span></span><span></span></div></div></div>}
+                              </div>
+                      <div className="p-4 border-t border-gray-200/60 bg-white/50">
+                          <div className="relative">
+                            <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Ask anything..." onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} disabled={isTyping} className="w-full bg-gray-100 border-transparent rounded-full py-3 pl-4 pr-12 text-sm focus:ring-2 focus:ring-orange-400" />
+                            <Button size="icon" onClick={handleSendMessage} disabled={isTyping || !chatInput.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 bg-gradient-to-br from-orange-500 to-amber-500 hover:shadow-lg hover:shadow-orange-200 rounded-full transition-all">
+                              <Send className="h-4 w-4" />
                             </Button>
-                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                        <tool.icon className="h-16 w-16 text-white/80 mb-6" />
-                        <h3 className="text-2xl font-bold mb-4">{tool.label}</h3>
-                        <p className="text-white/80 mb-8">{tool.description}</p>
-                        <Button className="bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-white">
-                          Generate {tool.label}
-                        </Button>
                       </div>
-                    )}
                   </TabsContent>
-                ))}
               </div>
             </Tabs>
           </div>
-        </div>
-      </div>
+      </main>
+      <style>{`
+        .typing-indicator span { height: 8px; width: 8px; background-color: #fdb971; border-radius: 50%; display: inline-block; margin: 0 1px; animation: bounce 0.6s infinite alternate; }
+        .typing-indicator span:nth-of-type(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-of-type(3) { animation-delay: 0.4s; }
+        @keyframes bounce { to { opacity: 0.3; transform: translate3d(0, -5px, 0); } }
+      `}</style>
     </div>
   );
 };

@@ -1,20 +1,22 @@
-
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import MaterialViewer from '@/components/material/MaterialViewer';
-import { useMaterialsData } from '@/hooks/useDatabase';
+import { useMaterialsData, useDeleteMaterial } from '@/hooks/useDatabase';
 import { MaterialDisplay } from '@/types/api';
+import { toast } from 'sonner';
 
 const KnowledgeBase = () => {
   const { data: materialData, isLoading } = useMaterialsData();
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialDisplay | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
+  const deleteMaterial = useDeleteMaterial();
 
   const stats = [
     {
@@ -59,6 +61,28 @@ const KnowledgeBase = () => {
       case 'video': return '🎥';
       default: return '📁';
     }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmation.material) return;
+    
+    try {
+      await deleteMaterial.mutateAsync(deleteConfirmation.material.id);
+      toast.success(`"${deleteConfirmation.material.title}" has been deleted successfully`);
+      setDeleteConfirmation({ isOpen: false, material: null });
+    } catch (error) {
+      toast.error('Failed to delete material. Please try again.');
+      console.error('Error deleting material:', error);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, material: MaterialDisplay) => {
+    e.stopPropagation(); // Prevent opening the material
+    setDeleteConfirmation({ isOpen: true, material });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, material: null });
   };
 
   const filteredMaterials = materialData?.materials?.filter(material => {
@@ -150,7 +174,7 @@ const KnowledgeBase = () => {
               const handleMaterialClick = () => {
                 const materialWithCorrectTypes: MaterialDisplay = {
                   ...material,
-                  status: material.status as 'active' | 'archived'
+                  status: (material.status === 'archived' ? 'archived' : 'active') as 'active' | 'archived'
                 };
                 setSelectedMaterial(materialWithCorrectTypes);
               };
@@ -158,19 +182,33 @@ const KnowledgeBase = () => {
               return (
                 <div
                   key={material.id}
-                  onClick={handleMaterialClick}
                   className="group bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105"
                 >
                   <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-4xl">{getFileTypeIcon(material.type)}</span>
+                    <div 
+                      className="flex items-start space-x-4 flex-1 min-w-0"
+                      onClick={handleMaterialClick}
+                    >
+                      <span className="text-4xl flex-shrink-0">{getFileTypeIcon(material.type)}</span>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-lg truncate">{material.title}</h3>
+                        <h3 className="font-semibold text-gray-900 text-lg leading-tight break-words line-clamp-2 mb-1">
+                          {material.title}
+                        </h3>
                         <p className="text-sm text-gray-500 capitalize">{material.type}</p>
                       </div>
                     </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeleteClick(e, material)}
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <div onClick={handleMaterialClick}>
                       <ArrowRight className="h-5 w-5 text-pulse-500" />
+                      </div>
                     </div>
                   </div>
 
@@ -226,6 +264,64 @@ const KnowledgeBase = () => {
             </div>
           )}
         </div>
+        
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.isOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Delete Material</h3>
+                    <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{deleteConfirmation.material && getFileTypeIcon(deleteConfirmation.material.type)}</span>
+                    <div>
+                      <p className="font-medium text-gray-900">{deleteConfirmation.material?.title}</p>
+                      <p className="text-sm text-gray-500 capitalize">{deleteConfirmation.material?.type}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete this material? This will remove it from your Knowledge Base and any workflows it's part of.
+                </p>
+                
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelDelete}
+                    className="flex-1"
+                    disabled={deleteMaterial.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteMaterial.isPending}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {deleteMaterial.isPending ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      'Delete Material'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -1,4 +1,3 @@
-
 // Database types matching Supabase schema
 export interface Profile {
   id: string;
@@ -19,6 +18,7 @@ export interface Material {
   tags: string[];
   headings: string[];
   content_summary?: string;
+  raw_content?: string;
   study_time: number;
   created_at: string;
   updated_at: string;
@@ -94,6 +94,13 @@ export interface MaterialDisplay extends Material {
   studyTime: number;
   usedInWorkflow: boolean;
   uploadedAt: string;
+  parsedContent?: {
+    summary?: string;
+    quiz?: any;
+    mindMap?: string;
+    flashcards?: any;
+    polishedNote?: string;
+  }
 }
 
 export interface MaterialResponse {

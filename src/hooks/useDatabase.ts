@@ -1,8 +1,57 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMaterialInput } from '@/types/api';
+
+// Utility function to sanitize filename for storage
+function sanitizeFileName(fileName: string): string {
+  return fileName
+    // Remove emojis and special unicode characters
+    .replace(/[\u{1F600}-\u{1F6FF}]/gu, '') // Emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map Symbols
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Regional indicator symbols
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Miscellaneous symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Dingbats
+    // Replace problematic characters with safe alternatives
+    .replace(/[–—]/g, '-')                   // Em dash, en dash to hyphen
+    .replace(/['']/g, "'")                   // Smart quotes to regular quotes
+    .replace(/[""]/g, '"')                   // Smart double quotes
+    .replace(/[^\w\s\-_.()]/g, '')          // Remove other special chars, keep alphanumeric, spaces, hyphens, underscores, dots, parentheses
+    .replace(/\s+/g, '_')                    // Replace spaces with underscores
+    .replace(/_{2,}/g, '_')                  // Replace multiple underscores with single
+    .replace(/^_+|_+$/g, '')                 // Remove leading/trailing underscores
+    .trim();
+}
+
+// Utility function to upload file to Supabase storage
+export async function uploadFileToStorage(file: File, userId: string): Promise<string> {
+  try {
+    const sanitizedFileName = sanitizeFileName(file.name);
+    const fileName = `${userId}/${Date.now()}-${sanitizedFileName}`;
+  
+    // Use existing bucket name that matches your Supabase storage
+    const bucketName = 'study_materials';
+    
+  const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, file);
+  
+  if (error) {
+    throw new Error(`Failed to upload file: ${error.message}`);
+  }
+  
+    // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(fileName);
+  
+  return publicUrl;
+  } catch (error) {
+    console.error('Error uploading file to storage:', error);
+    throw error;
+  }
+}
 
 // Dashboard data hook
 export const useDashboardData = () => {
@@ -107,13 +156,34 @@ export const useMaterialsData = () => {
 
       return {
         totalItems: materials?.length || 0,
-        materials: materials?.map(m => ({
-          ...m,
-          type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
-          studyTime: m.study_time || 0,
-          usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
-          uploadedAt: m.created_at
-        })) || []
+        materials: materials?.map(m => {
+          // Try to parse the content_summary as JSON if it exists
+          let parsedContent = undefined;
+          if (m.content_summary) {
+            try {
+              parsedContent = JSON.parse(m.content_summary);
+            } catch (e) {
+              // If it's not valid JSON, treat it as legacy plain text summary
+              console.warn(`Failed to parse content_summary as JSON for material ${m.id}, treating as legacy text`);
+              parsedContent = {
+                summary: m.content_summary, // Use the plain text as summary
+                quiz: null,
+                mindMap: null,
+                flashcards: null,
+                polishedNote: m.content_summary
+              };
+            }
+          }
+
+          return {
+            ...m,
+            type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
+            studyTime: m.study_time || 0,
+            usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
+            uploadedAt: m.created_at,
+            parsedContent
+          };
+        }) || []
       };
     },
     enabled: !!user
@@ -213,6 +283,75 @@ export const useCreateMaterial = () => {
   });
 };
 
+// Delete material mutation
+export const useDeleteMaterial = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (materialId: string) => {
+      if (!user) throw new Error('User not authenticated');
+
+      // First get the material to ensure user owns it and to get file_url for cleanup
+      const { data: material, error: fetchError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('id', materialId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!material) throw new Error('Material not found or unauthorized');
+
+      // Delete from workflow_materials table first (referential integrity)
+      await supabase
+        .from('workflow_materials')
+        .delete()
+        .eq('material_id', materialId);
+
+      // Delete the material
+      const { error } = await supabase
+        .from('materials')
+        .delete()
+        .eq('id', materialId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Try to delete associated file from storage if it exists
+      if (material.file_url) {
+        try {
+          const bucketName = 'study-files';
+          const fileName = material.file_url.split('/').pop();
+          if (fileName) {
+            await supabase.storage
+              .from(bucketName)
+              .remove([`${user.id}/${fileName}`]);
+          }
+        } catch (storageError) {
+          console.warn('Could not delete file from storage:', storageError);
+          // Don't throw error for storage cleanup failure
+        }
+      }
+
+      // Log activity
+      await supabase.rpc('log_activity', {
+        action_type: 'delete',
+        entity_type: 'material',
+        entity_id: materialId,
+        details: { title: material.title, file_type: material.file_type }
+      });
+
+      return material;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+    }
+  });
+};
+
 // Activity logs hook
 export const useActivityLogs = () => {
   const { user } = useAuth();
@@ -233,4 +372,47 @@ export const useActivityLogs = () => {
     },
     enabled: !!user
   });
+};
+
+// Helper function to save study session to database
+export const saveStudySessionToDb = async (sessionData: {
+  userId: string;
+  fileName: string;
+  fileType: string;
+  fileSize?: number;
+  fileUrl?: string;
+  rawTranscription?: string;
+  polishedNote?: string;
+  aiSummary?: string;
+  aiQuiz?: any;
+  aiMindmap?: string;
+  aiFlashcards?: any;
+  processingTimeMs?: number;
+  featuresGenerated?: string[];
+}) => {
+  // For now, we'll directly insert using a raw SQL approach until the table types are updated
+  const { data, error } = await supabase.rpc('insert_study_session', {
+    user_id: sessionData.userId,
+    file_name: sessionData.fileName,
+    file_type: sessionData.fileType,
+    file_size: sessionData.fileSize,
+    file_url: sessionData.fileUrl,
+    raw_transcription: sessionData.rawTranscription,
+    polished_note: sessionData.polishedNote,
+    ai_summary: sessionData.aiSummary,
+    ai_quiz: sessionData.aiQuiz,
+    ai_mindmap: sessionData.aiMindmap,
+    ai_flashcards: sessionData.aiFlashcards,
+    processing_time_ms: sessionData.processingTimeMs,
+    features_generated: sessionData.featuresGenerated,
+    status: 'completed',
+    processing_completed_at: new Date().toISOString()
+  });
+
+  if (error) {
+    console.error('Error saving study session:', error);
+    throw error;
+  }
+
+  return data;
 };
