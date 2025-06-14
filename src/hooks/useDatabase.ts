@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMaterialInput, MaterialDisplay } from '@/types/api';
+import WorkflowAIService from '@/services/workflow/ai.service';
 
 // Utility function to sanitize filename for storage
 function sanitizeFileName(fileName: string): string {
@@ -188,7 +189,7 @@ export const useMaterialsData = () => {
   });
 };
 
-// Create workflow mutation
+// Create workflow mutation with AI generation
 export const useCreateWorkflow = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -235,6 +236,35 @@ export const useCreateWorkflow = () => {
           );
 
         if (materialsError) throw materialsError;
+
+        // Generate AI content for the workflow if materials are provided
+        try {
+          console.log('🚀 Starting AI content generation for new workflow...');
+          const materialDisplays = materialsData.map((m: any) => toMaterialDisplay(m, true));
+          const aiContent = await WorkflowAIService.generateWorkflowContent(materialDisplays);
+          
+          // Update workflow with AI-generated content
+          const { error: updateError } = await supabase
+            .from('workflows')
+            .update({
+              features_used: ['summary', 'quiz', 'flashcards', 'mindmap'],
+              // Store AI content in materials_data for now (could be separate table in future)
+              materials_data: {
+                ...workflow.materials_data,
+                ai_content: aiContent
+              }
+            })
+            .eq('id', workflow.id);
+
+          if (updateError) {
+            console.warn('Failed to update workflow with AI content:', updateError);
+          } else {
+            console.log('✅ AI content generated and saved for workflow');
+          }
+        } catch (aiError) {
+          console.warn('AI content generation failed, but workflow was created:', aiError);
+          // Don't throw error here - workflow creation should succeed even if AI fails
+        }
       }
 
       // Log activity
@@ -294,7 +324,7 @@ export const useCreateMaterial = () => {
   });
 };
 
-// Add material to workflow mutation
+// Add material to workflow mutation with AI generation
 export const useAddMaterialToWorkflow = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -341,12 +371,6 @@ export const useAddMaterialToWorkflow = () => {
       const currentMaterials = Array.isArray(workflowData.materials_data) ? workflowData.materials_data : [];
       // Append new material data and update workflow
       const newMaterialsData = [...currentMaterials, materialData];
-      const { error: updateError } = await supabase
-        .from('workflows')
-        .update({ materials_data: newMaterialsData })
-        .eq('id', workflowId);
-      
-      if (updateError) throw updateError;
       
       // Also insert into join table for consistency with other parts of the app
       const { data, error } = await supabase
@@ -359,6 +383,42 @@ export const useAddMaterialToWorkflow = () => {
         .single();
 
       if (error) throw error;
+
+      // Update workflow with new materials data
+      const { error: updateError } = await supabase
+        .from('workflows')
+        .update({ materials_data: newMaterialsData })
+        .eq('id', workflowId);
+      
+      if (updateError) throw updateError;
+
+      // Generate updated AI content for the workflow
+      try {
+        console.log('🚀 Regenerating AI content for updated workflow...');
+        const materialDisplays = newMaterialsData.map((m: any) => toMaterialDisplay(m, true));
+        const aiContent = await WorkflowAIService.generateWorkflowContent(materialDisplays);
+        
+        // Update workflow with new AI-generated content
+        const { error: aiUpdateError } = await supabase
+          .from('workflows')
+          .update({
+            features_used: ['summary', 'quiz', 'flashcards', 'mindmap'],
+            materials_data: {
+              ...newMaterialsData,
+              ai_content: aiContent
+            }
+          })
+          .eq('id', workflowId);
+
+        if (aiUpdateError) {
+          console.warn('Failed to update workflow with new AI content:', aiUpdateError);
+        } else {
+          console.log('✅ AI content regenerated and saved for updated workflow');
+        }
+      } catch (aiError) {
+        console.warn('AI content regeneration failed, but material was added:', aiError);
+        // Don't throw error here - material addition should succeed even if AI fails
+      }
 
       await supabase.rpc('log_activity', {
         action_type: 'update',

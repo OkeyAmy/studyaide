@@ -100,29 +100,109 @@ const mockDashboardData: DashboardResponse = {
   activeWorkflows: 3
 };
 
-const mockWorkflowData: WorkflowResponse = {
-  totalWorkflows: 10,
-  activeSessions: 2,
-  completedWorkflows: 8,
-  studyHours: 120,
+const mockWorkflowData = {
+  totalWorkflows: 8,
+  activeSessions: 3,
+  completedWorkflows: 5,
+  studyHours: 24.5,
   recentWorkflowSessions: [
     {
-      id: 'session-1',
-      title: 'Deep Learning Fundamentals',
-      materials: ['1', '2'],
-      featuresUsed: ['summary', 'mindmap'],
-      timeSpent: 15,
-      status: 'active',
-      createdAt: '2024-01-20T14:00:00Z'
+      id: "wf-001",
+      title: "Machine Learning Fundamentals",
+      materials: [
+        {
+          id: "mat-001",
+          user_id: "user-1",
+          title: "Introduction to Neural Networks",
+          file_type: "pdf",
+          file_url: "https://example.com/neural-networks.pdf",
+          file_size: 2048000,
+          status: "active" as const,
+          tags: ["machine learning", "neural networks"],
+          headings: ["Introduction", "Neural Network Basics"],
+          content_summary: "Basic concepts of neural networks",
+          study_time: 120,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-15T10:00:00Z",
+          type: "pdf" as const,
+          studyTime: 120,
+          usedInWorkflow: true,
+          uploadedAt: "2024-01-15T10:00:00Z",
+          parsedContent: {
+            summary: "Introduction to neural networks and deep learning concepts",
+            quiz: null,
+            mindMap: null,
+            flashcards: null,
+            polishedNote: "Neural networks are computational models inspired by biological neural networks"
+          }
+        },
+        {
+          id: "mat-002",
+          user_id: "user-1",
+          title: "Deep Learning Algorithms",
+          file_type: "docx",
+          file_url: "https://example.com/deep-learning.docx",
+          file_size: 1536000,
+          status: "active" as const,
+          tags: ["deep learning", "algorithms"],
+          headings: ["CNN", "RNN", "LSTM"],
+          content_summary: "Overview of deep learning algorithms",
+          study_time: 90,
+          created_at: "2024-01-16T11:00:00Z",
+          updated_at: "2024-01-16T11:00:00Z",
+          type: "docx" as const,
+          studyTime: 90,
+          usedInWorkflow: true,
+          uploadedAt: "2024-01-16T11:00:00Z",
+          parsedContent: {
+            summary: "Comprehensive overview of CNN, RNN, and LSTM architectures",
+            quiz: null,
+            mindMap: null,
+            flashcards: null,
+            polishedNote: "Deep learning algorithms including convolutional and recurrent neural networks"
+          }
+        }
+      ],
+      featuresUsed: ["summary", "mindmap"] as Array<"summary" | "mindmap" | "quiz" | "chatbot">,
+      timeSpent: 210,
+      status: "active" as const,
+      createdAt: "2024-01-15T09:00:00Z"
     },
     {
-      id: 'session-2',
-      title: 'Advanced Python Concepts',
-      materials: ['3', '4'],
-      featuresUsed: ['quiz', 'chatbot'],
-      timeSpent: 20,
-      status: 'completed',
-      createdAt: '2024-01-18T10:00:00Z'
+      id: "wf-002", 
+      title: "Data Science Project",
+      materials: [
+        {
+          id: "mat-003",
+          user_id: "user-1",
+          title: "Statistical Analysis Methods",
+          file_type: "pdf",
+          file_url: "https://example.com/statistics.pdf",
+          file_size: 1024000,
+          status: "active" as const,
+          tags: ["statistics", "data science"],
+          headings: ["Descriptive Statistics", "Inferential Statistics"],
+          content_summary: "Statistical methods for data analysis",
+          study_time: 150,
+          created_at: "2024-01-17T12:00:00Z",
+          updated_at: "2024-01-17T12:00:00Z",
+          type: "pdf" as const,
+          studyTime: 150,
+          usedInWorkflow: true,
+          uploadedAt: "2024-01-17T12:00:00Z",
+          parsedContent: {
+            summary: "Statistical methods including descriptive and inferential statistics",
+            quiz: null,
+            mindMap: null,
+            flashcards: null,
+            polishedNote: "Comprehensive guide to statistical analysis methods"
+          }
+        }
+      ],
+      featuresUsed: ["quiz", "flashcards"] as Array<"summary" | "mindmap" | "quiz" | "chatbot">,
+      timeSpent: 150,
+      status: "completed" as const,
+      createdAt: "2024-01-17T08:00:00Z"
     }
   ]
 };
