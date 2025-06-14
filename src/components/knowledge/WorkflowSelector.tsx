@@ -169,52 +169,53 @@ const WorkflowSelector = ({ isOpen, material, onClose }: WorkflowSelectorProps) 
                     ))
                   )}
                 </div>
-              </>
-            ) : (
-              /* Create New Workflow Form */
-              <div className="space-y-6">
+              </div>
+            </>
+          ) : (
+            /* Create New Workflow Form */
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3">
+                <Button
+                  onClick={() => setShowCreateNew(false)}
+                  variant="ghost"
+                  size="sm"
+                >
+                  ← Back
+                </Button>
+                <h3 className="text-lg font-medium text-gray-900">Create New Workflow</h3>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Workflow Title
+                </label>
+                <Input
+                  value={newWorkflowTitle}
+                  onChange={(e) => setNewWorkflowTitle(e.target.value)}
+                  placeholder="Enter workflow title..."
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">Material to be added:</h4>
                 <div className="flex items-center space-x-3">
-                  <Button
-                    onClick={() => setShowCreateNew(false)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    ← Back
-                  </Button>
-                  <h3 className="text-lg font-medium text-gray-900">Create New Workflow</h3>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Workflow Title
-                  </label>
-                  <Input
-                    value={newWorkflowTitle}
-                    onChange={(e) => setNewWorkflowTitle(e.target.value)}
-                    placeholder="Enter workflow title..."
-                    className="w-full"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Material to be added:</h4>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{
-                      material.type === 'pdf' ? '📄' :
-                      material.type === 'docx' ? '📝' :
-                      material.type === 'audio' ? '🎵' :
-                      material.type === 'video' ? '🎥' : '📁'
-                    }</span>
-                    <div>
-                      <p className="font-medium text-gray-900">{material.title}</p>
-                      <p className="text-sm text-gray-500 capitalize">{material.type}</p>
-                    </div>
+                  <span className="text-2xl">
+                    {material.type === 'pdf' ? '📄' :
+                     material.type === 'docx' ? '📝' :
+                     material.type === 'audio' ? '🎵' :
+                     material.type === 'video' ? '🎥' : '📁'}
+                  </span>
+                  <div>
+                    <p className="font-medium text-gray-900">{material.title}</p>
+                    <p className="text-sm text-gray-500 capitalize">{material.type}</p>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-200 bg-gray-50">
