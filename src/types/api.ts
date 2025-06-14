@@ -74,7 +74,7 @@ export interface DashboardResponse {
 export interface WorkflowSession {
   id: string;
   title: string;
-  materials: string[];
+  materials: MaterialDisplay[];
   featuresUsed: Array<"summary" | "mindmap" | "quiz" | "chatbot">;
   timeSpent: number;
   status: "active" | "paused" | "completed";

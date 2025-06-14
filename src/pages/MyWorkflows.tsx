@@ -90,11 +90,7 @@ const MyWorkflows = () => {
   };
 
   const handleWorkflowClick = (workflow: any) => {
-    if (workflow.materials && workflow.materials.length === 1) {
-      setMaterialToView(workflow.materials[0]);
-    } else {
-      setSelectedWorkflow(workflow);
-    }
+    setSelectedWorkflow(workflow);
   };
 
   const handleBackToWorkflows = () => {

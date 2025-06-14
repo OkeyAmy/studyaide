@@ -141,8 +141,8 @@ export const useWorkflowData = () => {
       const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
         id: w.id,
         title: w.title,
-        materials: (w.materials_data || [])
-          .map((m: any) => toMaterialDisplay(m, true)) as MaterialDisplay[],
+        materials: (Array.isArray(w.materials_data) ? w.materials_data : [])
+          .map((m: any) => toMaterialDisplay(m, true)),
         featuresUsed: w.features_used || [],
         timeSpent: w.time_spent || 0,
         status: w.status as "active" | "paused" | "completed",
@@ -337,9 +337,10 @@ export const useAddMaterialToWorkflow = () => {
       
       if (workflowError) throw workflowError;
       if (!workflowData) throw new Error('Workflow not found');
-
+      
+      const currentMaterials = Array.isArray(workflowData.materials_data) ? workflowData.materials_data : [];
       // Append new material data and update workflow
-      const newMaterialsData = [...(workflowData.materials_data || []), materialData];
+      const newMaterialsData = [...currentMaterials, materialData];
       const { error: updateError } = await supabase
         .from('workflows')
         .update({ materials_data: newMaterialsData })

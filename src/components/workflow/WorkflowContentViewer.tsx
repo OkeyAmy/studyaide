@@ -64,7 +64,7 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
   }, [workflowMaterials, selectedMaterial]);
 
   const handleMaterialSelect = (material: any) => {
-    setSelectedMaterial(material);
+    navigate(`/knowledge?material=${material.id}`);
   };
 
   const handleSendMessage = () => {
