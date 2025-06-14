@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMaterialInput, MaterialDisplay } from '@/types/api';
-import { workflowAIService } from '@/services/workflow.ai.service';
+import { workflowAIService } from '@/services/workflow/ai.service';
 
 // Utility function to sanitize filename for storage
 function sanitizeFileName(fileName: string): string {

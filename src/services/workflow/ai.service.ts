@@ -1,10 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Material } from '@/types/api';
-import { summaryService } from './summary.service';
-import { quizService } from './quiz.service';
-import { flashcardService } from './flashcard.service';
-import { mindmapService } from './mindmap.service';
+import { summaryService } from '../summary.service';
+import { quizService } from '../quiz.service';
+import { flashcardService } from '../flashcard.service';
+import { mindmapService } from '../mindmap.service';
 import { toast } from 'sonner';
 
 async function fetchFileAsBlob(fileUrl: string): Promise<Blob | null> {
