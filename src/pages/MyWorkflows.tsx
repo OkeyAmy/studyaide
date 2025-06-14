@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
-import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mic, Upload, FolderOpen } from 'lucide-react';
+import { Plus, Play, Pause, MoreHorizontal, Clock, Users, TrendingUp, Target, Mic, Upload, FolderOpen, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
@@ -282,14 +282,20 @@ const MyWorkflows = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 text-sm">
-                      <div className="space-y-2">
-                        <span className="text-gray-500 font-medium">Time Spent</span>
-                        <p className="font-bold text-lg text-gray-900">{workflow.timeSpent || 0}h</p>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-gray-500 font-medium">Features Used</span>
-                        <p className="font-bold text-lg text-gray-900">{workflow.featuresUsed?.length || 0} tools</p>
-                      </div>
+                       <div className="flex items-start gap-3">
+                         <Clock className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                         <div>
+                           <span className="text-gray-500 font-medium block">Time Spent</span>
+                           <p className="font-bold text-lg text-gray-900">{workflow.timeSpent || 0}h</p>
+                         </div>
+                       </div>
+                       <div className="flex items-start gap-3">
+                         <Layers className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                         <div>
+                           <span className="text-gray-500 font-medium block">Materials</span>
+                           <p className="font-bold text-lg text-gray-900">{workflow.materials?.length || 0} items</p>
+                         </div>
+                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
