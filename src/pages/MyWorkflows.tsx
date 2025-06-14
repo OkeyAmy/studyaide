@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
@@ -95,6 +94,36 @@ const MyWorkflows = () => {
 
   const handleBackToWorkflows = () => {
     setSelectedWorkflow(null);
+  };
+
+  // --- DELETE WORKFLOW FUNCTION ---
+  const handleDeleteWorkflow = async (workflowId: string) => {
+    if (!window.confirm('Are you sure you want to delete this workflow? This cannot be undone.')) {
+      return;
+    }
+    // Call Supabase to delete workflow
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      // First, delete all workflow_material entries for this workflow (if they exist)
+      await supabase
+        .from('workflow_materials')
+        .delete()
+        .eq('workflow_id', workflowId);
+      // Then, delete the workflow itself
+      const { error } = await supabase
+        .from('workflows')
+        .delete()
+        .eq('id', workflowId);
+      if (error) {
+        alert('Failed to delete workflow: ' + error.message);
+      } else {
+        alert('Workflow deleted.');
+        // Optionally, refetch or refresh
+        window.location.reload();
+      }
+    } catch (err: any) {
+      alert('Error deleting workflow: ' + (err?.message || err));
+    }
   };
 
   // If a workflow is selected, show the detailed view
@@ -218,10 +247,9 @@ const MyWorkflows = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-gradient-to-r from-pulse-500 to-orange-600 rounded-2xl flex items-center justify-center">
+                          {/* Only show trendingUp for completed, play for active/paused */}
                           {workflow.status === 'active' ? (
                             <Play className="h-6 w-6 text-white" />
-                          ) : workflow.status === 'paused' ? (
-                            <Pause className="h-6 w-6 text-white" />
                           ) : (
                             <TrendingUp className="h-6 w-6 text-white" />
                           )}
@@ -231,17 +259,16 @@ const MyWorkflows = () => {
                           <p className="text-gray-600">Workflow progress tracking</p>
                         </div>
                       </div>
-                      <Badge 
-                        variant={workflow.status === 'active' ? 'default' : workflow.status === 'completed' ? 'secondary' : 'outline'}
+                      <Badge
+                        // Use only allowed status values for type safety
+                        variant={workflow.status === "active" ? "default" : "secondary"}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          workflow.status === 'active' 
-                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200' 
-                            : workflow.status === 'completed'
-                            ? 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 border-purple-200'
-                            : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border-gray-200'
+                          workflow.status === "active"
+                            ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200"
+                            : "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border-gray-200"
                         }`}
                       >
-                        {workflow.status}
+                        {workflow.status === "active" ? "active" : "completed"}
                       </Badge>
                     </div>
 
@@ -263,9 +290,9 @@ const MyWorkflows = () => {
                         </Badge>
                       ))}
                       {(workflow.featuresUsed?.length || 0) > 3 && (
-                                                  <Badge variant="outline" className="text-xs bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full">
-                            +{(workflow.featuresUsed?.length || 0) - 3}
-                          </Badge>
+                        <Badge variant="outline" className="text-xs bg-gradient-to-r from-pulse-50 to-orange-50 text-pulse-700 border-pulse-200 rounded-full">
+                          +{(workflow.featuresUsed?.length || 0) - 3}
+                        </Badge>
                       )}
                     </div>
 
@@ -274,7 +301,7 @@ const MyWorkflows = () => {
                         <Button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleWorkflowAction(workflow.id, workflow.status === 'active' ? 'pause' : 'play');
+                            handleWorkflowAction(workflow.id, 'play'); // only "Continue" (play) allowed
                           }}
                           disabled={activeWorkflow === workflow.id}
                           className="flex-1 bg-gradient-to-r from-pulse-500 to-orange-600 hover:from-pulse-600 hover:to-orange-700 text-white shadow-lg rounded-2xl"
@@ -285,11 +312,6 @@ const MyWorkflows = () => {
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                               Starting...
                             </>
-                          ) : workflow.status === 'active' ? (
-                            <>
-                              <Pause className="h-4 w-4 mr-2" />
-                              Pause
-                            </>
                           ) : (
                             <>
                               <Play className="h-4 w-4 mr-2" />
@@ -298,13 +320,23 @@ const MyWorkflows = () => {
                           )}
                         </Button>
                       )}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      {/* --- DELETE WORKFLOW BUTTON --- */}
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="px-4 bg-white/60 backdrop-blur-sm border-white/20 hover:bg-white/80 rounded-2xl"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteWorkflow(workflow.id);
+                        }}
+                        title="Delete workflow"
+                        type="button"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                        {/* Use a Lucide trash icon if available */}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h16zm-8 4v6m4-6v6" />
+                        </svg>
                       </Button>
                     </div>
 
