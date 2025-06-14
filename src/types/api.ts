@@ -120,3 +120,13 @@ export interface CreateMaterialInput {
   content_summary?: string;
   study_time?: number;
 }
+
+// For Workflow Viewer
+export interface FolderItem {
+  type: 'folder';
+  id: string;
+  name: string;
+  children: MaterialDisplay[];
+};
+
+export type ListItem = MaterialDisplay | FolderItem;
