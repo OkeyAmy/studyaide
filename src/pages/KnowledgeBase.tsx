@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,13 +11,15 @@ import { useMaterialsData, useDeleteMaterial } from '@/hooks/useDatabase';
 import { MaterialDisplay } from '@/types/api';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import WorkflowSelector from '@/components/knowledge/WorkflowSelector';
 
 const KnowledgeBase = () => {
-  const { data: materialData, isLoading } = useMaterialsData();
+  const { data: materialData, isLoading, refetch: refetchMaterials } = useMaterialsData();
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialDisplay | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
+  const [workflowSelectorState, setWorkflowSelectorState] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
   const deleteMaterial = useDeleteMaterial();
   const isMobile = useIsMobile();
 
@@ -85,6 +88,16 @@ const KnowledgeBase = () => {
 
   const handleCancelDelete = () => {
     setDeleteConfirmation({ isOpen: false, material: null });
+  };
+
+  const handleAddToWorkflowClick = (e: React.MouseEvent, material: MaterialDisplay) => {
+    e.stopPropagation();
+    setWorkflowSelectorState({ isOpen: true, material: material });
+  };
+
+  const handleCloseWorkflowSelector = () => {
+    setWorkflowSelectorState({ isOpen: false, material: null });
+    refetchMaterials();
   };
 
   const filteredMaterials = materialData?.materials?.filter(material => {
@@ -174,23 +187,18 @@ const KnowledgeBase = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {filteredMaterials.map((material) => {
               const handleMaterialClick = () => {
-                // Ensure the status is correctly typed before setting state
-                const correctlyTypedMaterial: MaterialDisplay = {
-                  ...material,
-                  status: (material.status === 'active' || material.status === 'archived') ? material.status : 'active', // Default to 'active' if type is unexpected
-                };
-                setSelectedMaterial(correctlyTypedMaterial);
+                setSelectedMaterial(material);
               };
 
               return (
                 <div
                   key={material.id}
-                  className="group bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl p-4 md:p-6 lg:p-8 shadow-lg md:shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-102"
+                  className="group bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl p-4 md:p-6 lg:p-8 shadow-lg md:shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-300"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div 
-                      className="flex items-start space-x-3 flex-1 min-w-0"
-                      onClick={handleMaterialClick} // Ensure this calls the corrected type handler
+                      className="flex items-start space-x-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={handleMaterialClick}
                     >
                       <span className="text-3xl md:text-4xl flex-shrink-0 pt-1">{getFileTypeIcon(material.type)}</span>
                       <div className="flex-1 min-w-0">
@@ -204,6 +212,15 @@ const KnowledgeBase = () => {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={(e) => handleAddToWorkflowClick(e, material)}
+                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-700 hover:bg-pulse-50 rounded-full"
+                        title="Add to workflow"
+                      >
+                        <Workflow className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => handleDeleteClick(e, material)}
                         className="h-7 w-7 md:h-8 md:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
                       >
@@ -212,15 +229,15 @@ const KnowledgeBase = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={handleMaterialClick} // Ensure this calls the corrected type handler
-                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-600 hover:bg-pulse-50 rounded-full"
+                        onClick={handleMaterialClick}
+                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
                       >
                         <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-3 md:space-y-4">
+                  <div className="space-y-3 md:space-y-4 cursor-pointer" onClick={handleMaterialClick}>
                     <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {material.tags.slice(0, 3).map((tag, index) => (
                         <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200 rounded-full">
@@ -330,6 +347,12 @@ const KnowledgeBase = () => {
             </div>
           </div>
         )}
+
+        <WorkflowSelector
+          isOpen={workflowSelectorState.isOpen}
+          material={workflowSelectorState.material}
+          onClose={handleCloseWorkflowSelector}
+        />
       </div>
     </AppLayout>
   );

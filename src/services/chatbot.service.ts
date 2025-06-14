@@ -1,4 +1,20 @@
+
 import { toast } from 'sonner';
+
+export const generateChatbotResponse = async (
+  message: string,
+  context: string
+): Promise<string> => {
+  console.log(`Generating chat response for message: "${message}"`);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return `Based on your notes about "${context.substring(0, 30)}...", here is a response to your message: "${message}". (This is a simulated response).`;
+  } catch (error: any) {
+    console.error('Error generating chat response:', error);
+    toast.error('Failed to get chat response. Please try again.');
+    throw new Error('Failed to get chat response: ' + (error.message || 'Unknown error'));
+  }
+};
 
 export const fetchChatResponse = async (
   materialId: string,
@@ -25,4 +41,9 @@ export const fetchChatResponse = async (
     // or return a specific error message string
     throw new Error('Failed to get chat response: ' + (error.message || 'Unknown error'));
   }
+};
+
+export const chatbotService = {
+  generateChatbotResponse,
+  fetchChatResponse,
 };

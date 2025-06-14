@@ -178,6 +178,7 @@ export const useMaterialsData = () => {
           return {
             ...m,
             type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
+            status: (m.status === 'active' || m.status === 'archived') ? m.status : 'active',
             studyTime: m.study_time || 0,
             usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
             uploadedAt: m.created_at,
@@ -279,6 +280,57 @@ export const useCreateMaterial = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['materials'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    }
+  });
+};
+
+// Add material to workflow mutation
+export const useAddMaterialToWorkflow = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ workflowId, materialId }: { workflowId: string; materialId: string }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: existing, error: checkError } = await supabase
+        .from('workflow_materials')
+        .select('id')
+        .eq('workflow_id', workflowId)
+        .eq('material_id', materialId)
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existing) {
+        throw new Error("Material is already in this workflow.");
+      }
+
+      const { data, error } = await supabase
+        .from('workflow_materials')
+        .insert({
+          workflow_id: workflowId,
+          material_id: materialId,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.rpc('log_activity', {
+        action_type: 'update',
+        entity_type: 'workflow',
+        entity_id: workflowId,
+        details: { added_material_id: materialId }
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
     }
   });
 };
