@@ -31,6 +31,7 @@ import { useDeleteMaterial } from '@/hooks/useDatabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import WorkflowSelector from '@/components/knowledge/WorkflowSelector';
 
 interface MaterialViewerProps {
   material: MaterialDisplay;
@@ -47,6 +48,7 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
   const [activeTab, setActiveTab] = useState('summary');
   const [chatInput, setChatInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [workflowSelectorState, setWorkflowSelectorState] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: 1, type: 'ai', message: `Hey! How can I help you with "${material?.title || 'this material'}"?` }
   ]);
@@ -123,6 +125,10 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
     setShowDeleteConfirm(false);
   };
 
+  const handleCloseWorkflowSelector = () => {
+    setWorkflowSelectorState({ isOpen: false, material: null });
+  };
+
   const scrollTabs = (direction: 'left' | 'right') => {
     if (tabsListRef.current) {
       const scrollAmount = direction === 'left' ? -150 : 150;
@@ -170,6 +176,7 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
               size={isMobile ? "icon" : "default"}
               className="bg-gradient-to-br from-orange-500 to-amber-500 text-white hover:shadow-lg hover:shadow-orange-200 transition-shadow rounded-full font-semibold"
               title="Add to Workflow"
+              onClick={() => setWorkflowSelectorState({ isOpen: true, material: material })}
             >
               <Plus className={cn("h-4 w-4", !isMobile && "mr-2")} /> <span className={cn(isMobile && "sr-only")}>Add to Workflow</span>
           </Button>
@@ -350,6 +357,11 @@ const MaterialViewer = ({ material, onBack }: MaterialViewerProps) => {
             </Tabs>
           </div>
       </main>
+      <WorkflowSelector
+        isOpen={workflowSelectorState.isOpen}
+        material={workflowSelectorState.material}
+        onClose={handleCloseWorkflowSelector}
+      />
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -4,6 +4,7 @@ import {
     uploadFileToGemini, 
     isAIAvailable 
 } from './ai.service';
+import { toast } from 'sonner';
 
 /**
  * Generate fallback mindmap when AI is not available
@@ -227,7 +228,7 @@ Text to create mindmap from:
 ${noteText}`;
 
     try {
-        const response = await generateStructuredResponse(prompt, 0.4, 800);
+        const response = await generateStructuredResponse(prompt, 0.4);
         
         // Clean up the response to ensure it's valid markdown
         let cleanedResult = response.trim();
