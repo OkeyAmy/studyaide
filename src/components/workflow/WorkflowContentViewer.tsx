@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,9 @@ import {
   Layers,
   Send,
   Bot,
-  X
+  X,
+  FolderPlus,
+  Folder,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,9 +40,18 @@ interface ChatMessage {
   message: string;
 }
 
+type MaterialItem = any;
+type FolderItem = {
+  type: 'folder';
+  id: string;
+  name: string;
+  children: MaterialItem[];
+};
+type ListItem = MaterialItem | FolderItem;
+
 const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps) => {
   const navigate = useNavigate();
-  const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem>(null);
   const [activeTab, setActiveTab] = useState('summary');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -47,19 +59,32 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
     { id: 1, type: 'ai', message: 'Hi! Ask me anything about your workflow materials!' }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [items, setItems] = useState<ListItem[]>([]);
   
   // The materials are already in the workflow object.
   const workflowMaterials = workflow.materials || [];
 
   // Auto-select first material if none selected
   React.useEffect(() => {
+    setItems(workflowMaterials);
     if (workflowMaterials.length > 0 && !selectedMaterial) {
-      setSelectedMaterial(workflowMaterials[0]);
+      setSelectedMaterial(workflowMaterials.find((item: ListItem) => !item.type || item.type !== 'folder'));
     }
   }, [workflowMaterials, selectedMaterial]);
 
   const handleMaterialSelect = (material: any) => {
     setSelectedMaterial(material);
+  };
+  
+  const handleCreateFolder = () => {
+    const newFolderName = `New Folder ${items.filter(it => it.type === 'folder').length + 1}`;
+    const newFolder: FolderItem = {
+      type: 'folder',
+      id: `folder-${Date.now()}`,
+      name: newFolderName,
+      children: [],
+    };
+    setItems(prevItems => [...prevItems, newFolder]);
   };
 
   const handleSendMessage = () => {
@@ -105,6 +130,29 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
           <p className="text-sm text-gray-500">{material.file_type} • {material.pages || 0} pages</p>
         </div>
         <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "rotate-90 text-orange-600" : "text-gray-400")} />
+      </div>
+    </div>
+  );
+
+  const FolderCard = ({ folder }: { folder: FolderItem }) => (
+    <div
+      className={cn(
+        "group p-4 rounded-2xl cursor-pointer transition-all duration-300 border-2",
+        "bg-white/60 backdrop-blur-sm border-white/20 hover:bg-white/80 hover:shadow-md"
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "p-2 rounded-xl flex items-center justify-center",
+          "bg-gray-100"
+        )}>
+          <Folder className={cn("h-5 w-5", "text-gray-600")} />
+        </div>
+        <div className="flex-1">
+          <h4 className="font-semibold text-gray-900">{folder.name}</h4>
+          <p className="text-sm text-gray-500">{folder.children.length} items</p>
+        </div>
+        <ChevronRight className={cn("h-4 w-4 transition-transform", "text-gray-400")} />
       </div>
     </div>
   );
@@ -228,27 +276,38 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
           {/* Left Panel - Materials List */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/20 shadow-lg p-6 h-full">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                  <Layers className="h-5 w-5 text-white" />
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                    <Layers className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Materials ({items.length})</h2>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">Materials ({workflowMaterials.length})</h2>
+                <Button variant="ghost" size="icon" onClick={handleCreateFolder} className="rounded-full bg-white/60 hover:bg-white/80">
+                  <FolderPlus className="h-5 w-5 text-blue-600" />
+                </Button>
               </div>
               
               <div className="space-y-3 overflow-y-auto max-h-[calc(100%-80px)]">
-                {workflowMaterials.length === 0 ? (
+                {items.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-600">No materials in this workflow</p>
                   </div>
                 ) : (
-                  workflowMaterials.map((material) => (
-                    <MaterialCard 
-                      key={material.id} 
-                      material={material} 
-                      isSelected={selectedMaterial?.id === material.id}
-                    />
-                  ))
+                  items.map((item) => {
+                    if (item.type === 'folder') {
+                      return <FolderCard key={item.id} folder={item as FolderItem} />;
+                    }
+                    const material = item as MaterialItem;
+                    return (
+                      <MaterialCard 
+                        key={material.id} 
+                        material={material} 
+                        isSelected={selectedMaterial?.id === material.id}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>
