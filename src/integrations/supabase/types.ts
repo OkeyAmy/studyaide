@@ -49,6 +49,7 @@ export type Database = {
           headings: string[] | null
           id: string
           status: string | null
+          study_session_id: string | null
           study_time: number | null
           tags: string[] | null
           title: string
@@ -64,6 +65,7 @@ export type Database = {
           headings?: string[] | null
           id?: string
           status?: string | null
+          study_session_id?: string | null
           study_time?: number | null
           tags?: string[] | null
           title: string
@@ -79,6 +81,7 @@ export type Database = {
           headings?: string[] | null
           id?: string
           status?: string | null
+          study_session_id?: string | null
           study_time?: number | null
           tags?: string[] | null
           title?: string
@@ -108,6 +111,75 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          ai_flashcards: Json | null
+          ai_mindmap: string | null
+          ai_quiz: Json | null
+          ai_summary: string | null
+          created_at: string | null
+          error_message: string | null
+          features_generated: string[] | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string | null
+          id: string
+          polished_note: string | null
+          processing_completed_at: string | null
+          processing_started_at: string | null
+          processing_time_ms: number | null
+          raw_transcription: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_flashcards?: Json | null
+          ai_mindmap?: string | null
+          ai_quiz?: Json | null
+          ai_summary?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          features_generated?: string[] | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url?: string | null
+          id?: string
+          polished_note?: string | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          processing_time_ms?: number | null
+          raw_transcription?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_flashcards?: Json | null
+          ai_mindmap?: string | null
+          ai_quiz?: Json | null
+          ai_summary?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          features_generated?: string[] | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          polished_note?: string | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          processing_time_ms?: number | null
+          raw_transcription?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -215,6 +287,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_study_sessions_table_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      insert_study_session: {
+        Args: {
+          user_id: string
+          file_name: string
+          file_type: string
+          file_size?: number
+          file_url?: string
+          raw_transcription?: string
+          polished_note?: string
+          ai_summary?: string
+          ai_quiz?: Json
+          ai_mindmap?: string
+          ai_flashcards?: Json
+          processing_time_ms?: number
+          features_generated?: string[]
+          status?: string
+          processing_completed_at?: string
+        }
+        Returns: string
+      }
       log_activity: {
         Args: {
           action_type: string
