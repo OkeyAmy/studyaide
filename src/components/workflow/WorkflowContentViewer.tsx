@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +24,6 @@ import {
   Bot,
   X
 } from 'lucide-react';
-import { useMaterialsData } from '@/hooks/useDatabase';
 import { cn } from '@/lib/utils';
 
 interface WorkflowContentViewerProps {
@@ -41,7 +39,6 @@ interface ChatMessage {
 
 const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps) => {
   const navigate = useNavigate();
-  const { data: materials } = useMaterialsData();
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('summary');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -51,10 +48,8 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
   ]);
   const [isTyping, setIsTyping] = useState(false);
   
-  // Filter materials that belong to this workflow
-  const workflowMaterials = materials?.materials?.filter(material => 
-    workflow.materials?.includes(material.id)
-  ) || [];
+  // The materials are already in the workflow object.
+  const workflowMaterials = workflow.materials || [];
 
   // Auto-select first material if none selected
   React.useEffect(() => {
@@ -64,7 +59,7 @@ const WorkflowContentViewer = ({ workflow, onBack }: WorkflowContentViewerProps)
   }, [workflowMaterials, selectedMaterial]);
 
   const handleMaterialSelect = (material: any) => {
-    navigate(`/knowledge?material=${material.id}`);
+    setSelectedMaterial(material);
   };
 
   const handleSendMessage = () => {
