@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Plus, FileText, Play, Archive, ArrowRight, Trash2, AlertTriangle, X, PackagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import MaterialViewer from '@/components/material/MaterialViewer';
-import { useMaterialsData, useDeleteMaterial } from '@/hooks/useDatabase';
+import { useMaterialsData, useDeleteMaterial, useCreateWorkflow } from '@/hooks/useDatabase';
 import { MaterialDisplay } from '@/types/api';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import WorkflowSelector from '@/components/knowledge/WorkflowSelector';
 
 const KnowledgeBase = () => {
-  const { data: materialData, isLoading } = useMaterialsData();
+  const { data: materialData, isLoading, refetch: refetchMaterials } = useMaterialsData();
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialDisplay | null>(null);
+  const [materialForWorkflow, setMaterialForWorkflow] = useState<MaterialDisplay | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; material: MaterialDisplay | null }>({ isOpen: false, material: null });
@@ -47,7 +49,7 @@ const KnowledgeBase = () => {
     },
     {
       label: 'Study Hours',
-      value: `${materialData?.materials?.reduce((acc, m) => acc + m.studyTime, 0) || 0}h`,
+      value: `${materialData?.materials?.reduce((acc, m) => acc + (Number(m.studyTime) || 0), 0) || 0}h`,
       icon: FileText,
       color: 'bg-gradient-to-r from-purple-500 to-purple-600',
       trend: 'Total time',
@@ -55,7 +57,7 @@ const KnowledgeBase = () => {
     }
   ];
 
-  const getFileTypeIcon = (type: string) => {
+  const getFileTypeIcon = (type: MaterialDisplay['type']) => {
     switch (type) {
       case 'pdf': return '📄';
       case 'docx': return '📝';
@@ -72,6 +74,9 @@ const KnowledgeBase = () => {
       await deleteMaterial.mutateAsync(deleteConfirmation.material.id);
       toast.success(`"${deleteConfirmation.material.title}" has been deleted successfully`);
       setDeleteConfirmation({ isOpen: false, material: null });
+      if (selectedMaterial?.id === deleteConfirmation.material.id) {
+        setSelectedMaterial(null);
+      }
     } catch (error) {
       toast.error('Failed to delete material. Please try again.');
       console.error('Error deleting material:', error);
@@ -79,7 +84,7 @@ const KnowledgeBase = () => {
   };
 
   const handleDeleteClick = (e: React.MouseEvent, material: MaterialDisplay) => {
-    e.stopPropagation(); // Prevent opening the material
+    e.stopPropagation();
     setDeleteConfirmation({ isOpen: true, material });
   };
 
@@ -87,9 +92,14 @@ const KnowledgeBase = () => {
     setDeleteConfirmation({ isOpen: false, material: null });
   };
 
+  const handleOpenWorkflowSelector = (e: React.MouseEvent, material: MaterialDisplay) => {
+    e.stopPropagation();
+    setMaterialForWorkflow(material);
+  };
+
   const filteredMaterials = materialData?.materials?.filter(material => {
     const matchesSearch = material.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         material.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (material.tags && material.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     
     const matchesFilter = selectedFilter === 'all' || 
                          (selectedFilter === 'active' && material.status === 'active') ||
@@ -174,82 +184,107 @@ const KnowledgeBase = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {filteredMaterials.map((material) => {
               const handleMaterialClick = () => {
-                // Ensure the status is correctly typed before setting state
-                const correctlyTypedMaterial: MaterialDisplay = {
-                  ...material,
-                  status: (material.status === 'active' || material.status === 'archived') ? material.status : 'active', // Default to 'active' if type is unexpected
-                };
-                setSelectedMaterial(correctlyTypedMaterial);
+                setSelectedMaterial(material);
               };
 
               return (
                 <div
                   key={material.id}
-                  className="group bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl p-4 md:p-6 lg:p-8 shadow-lg md:shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-102"
+                  className="group bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl p-4 md:p-6 lg:p-8 shadow-lg md:shadow-xl border border-white/20 hover:bg-white/80 hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div 
-                      className="flex items-start space-x-3 flex-1 min-w-0"
-                      onClick={handleMaterialClick} // Ensure this calls the corrected type handler
-                    >
-                      <span className="text-3xl md:text-4xl flex-shrink-0 pt-1">{getFileTypeIcon(material.type)}</span>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-base md:text-lg leading-tight break-words line-clamp-2 mb-0.5">
-                          {material.title}
-                        </h3>
-                        <p className="text-xs md:text-sm text-gray-500 capitalize">{material.type}</p>
+                  <div 
+                    onClick={handleMaterialClick}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div 
+                        className="flex items-start space-x-3 flex-1 min-w-0"
+                      >
+                        <span className="text-3xl md:text-4xl flex-shrink-0 pt-1">{getFileTypeIcon(material.type)}</span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-base md:text-lg leading-tight break-words line-clamp-2 mb-0.5">
+                            {material.title}
+                          </h3>
+                          <p className="text-xs md:text-sm text-gray-500 capitalize">{material.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1 md:space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleDeleteClick(e, material)}
+                          className="h-7 w-7 md:h-8 md:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleMaterialClick}
+                          className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-600 hover:bg-pulse-50 rounded-full"
+                        >
+                          <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1 md:space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => handleDeleteClick(e, material)}
-                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleMaterialClick} // Ensure this calls the corrected type handler
-                        className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-600 hover:bg-pulse-50 rounded-full"
-                      >
-                        <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
-                      </Button>
+
+                    <div className="space-y-3 md:space-y-4">
+                      <div className="flex flex-wrap gap-1.5 md:gap-2">
+                        {(material.tags || []).slice(0, 3).map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200 rounded-full">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {(material.tags?.length || 0) > 3 && (
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200 rounded-full">
+                            +{(material.tags?.length || 0) - 3}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs md:text-sm text-gray-500">
+                        <span>{material.studyTime}h study time</span>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs px-2 py-0.5 md:px-2.5 md:py-1 rounded-full ${material.usedInWorkflow 
+                            ? 'border-green-200 text-green-700 bg-green-50' 
+                            : 'border-gray-200 bg-gray-50'
+                          }`}
+                        >
+                          {material.usedInWorkflow ? 'In Workflow' : 'Standalone'}
+                        </Badge>
+                      </div>
+
+                      <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                        Uploaded {new Date(material.uploadedAt).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="space-y-3 md:space-y-4">
-                    <div className="flex flex-wrap gap-1.5 md:gap-2">
-                      {material.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200 rounded-full">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {material.tags.length > 3 && (
-                        <Badge variant="secondary" className="text-xs px-2 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-pulse-100 to-pink-100 text-pulse-700 border-pulse-200 rounded-full">
-                          +{material.tags.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs md:text-sm text-gray-500">
-                      <span>{material.studyTime}h study time</span>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs px-2 py-0.5 md:px-2.5 md:py-1 rounded-full ${material.usedInWorkflow 
-                          ? 'border-green-200 text-green-700 bg-green-50' 
-                          : 'border-gray-200 bg-gray-50'
-                        }`}
-                      >
-                        {material.usedInWorkflow ? 'In Workflow' : 'Standalone'}
-                      </Badge>
-                    </div>
-
-                    <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
-                      Uploaded {new Date(material.uploadedAt).toLocaleDateString()}
-                    </div>
+                  <div className="flex items-center justify-end space-x-1 md:space-x-2 mt-4 pt-4 border-t border-gray-100/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleOpenWorkflowSelector(e, material)}
+                      className="p-1 text-sky-600 hover:text-sky-700 hover:bg-sky-50 rounded-md text-xs"
+                    >
+                      <PackagePlus className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5" /> Add to Workflow
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleDeleteClick(e, material)}
+                      className="h-7 w-7 md:h-8 md:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleMaterialClick}
+                      className="h-7 w-7 md:h-8 md:w-8 p-0 text-pulse-500 hover:text-pulse-600 hover:bg-pulse-50 rounded-full"
+                    >
+                      <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
+                    </Button>
                   </div>
                 </div>
               );
@@ -273,7 +308,6 @@ const KnowledgeBase = () => {
           )}
         </div>
         
-        {/* Delete Confirmation Modal */}
         {deleteConfirmation.isOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-auto">
@@ -329,6 +363,16 @@ const KnowledgeBase = () => {
               </div>
             </div>
           </div>
+        )}
+        {materialForWorkflow && (
+          <WorkflowSelector
+            isOpen={!!materialForWorkflow}
+            material={materialForWorkflow}
+            onClose={() => {
+              setMaterialForWorkflow(null);
+              refetchMaterials();
+            }}
+          />
         )}
       </div>
     </AppLayout>

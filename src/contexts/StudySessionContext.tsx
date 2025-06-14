@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { StudySessionData, StudySessionContextType } from '@/types/study-session';
+import { StudySessionData, StudySessionContextType, ChatMessage } from '@/types/study-session';
 import { generateSummaryFromFile, generateSummary } from '@/services/summary.service';
 import { generateQuizFromFile, generateQuiz } from '@/services/quiz.service';
 import { generateMindmapFromFile, generateMindmap } from '@/services/mindmap.service';
 import { generateFlashcardsFromFile, generateFlashcards } from '@/services/flashcard.service';
-import { generateChatbotResponse } from '@/services/chatbot.service';
+import { fetchChatResponse } from '@/services/chatbot.service';
 import { toast } from 'sonner';
 
 const StudySessionContext = createContext<StudySessionContextType | undefined>(undefined);
@@ -136,7 +136,7 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
 
     setIsGeneratingContent(true);
     try {
-      const mindMap = await generateMindmap(sessionData.polishedNote);
+      const mindMap = await generateMindmap(sessionData.polishedNote, sessionData.title);
       setSessionData(prev => prev ? {
         ...prev,
         mindMap,
@@ -197,45 +197,55 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
     }
   };
 
-  const sendChatMessage = async (message: string): Promise<string> => {
-    if (!sessionData?.polishedNote) {
-      throw new Error('No note context available for chat');
+  const sendChatMessage = async (messageContent: string): Promise<string> => {
+    if (!sessionData || !sessionData.id || !sessionData.title || !sessionData.polishedNote) {
+      const errorMsg = 'Chat context (ID, title, or note) is missing.';
+      toast.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
+    const newUserMessage: ChatMessage = {
+      id: `msg-${Date.now()}-user`,
+      role: 'user',
+      content: messageContent,
+      timestamp: new Date(),
+    };
+
+    // Prepare messages for API: existing history + new user message
+    const apiMessages = [
+      ...(sessionData.chatHistory?.map(msg => ({ role: msg.role, content: msg.content })) || []),
+      { role: 'user' as const, content: messageContent },
+    ];
+
     try {
-      const history = sessionData.chatHistory || [];
-      const response = await generateChatbotResponse(message, sessionData.polishedNote);
+      const assistantResponseContent = await fetchChatResponse(
+        sessionData.id,
+        apiMessages,
+        sessionData.title,
+        sessionData.parsedContent
+      );
       
-      const userMessage = {
-        id: `msg-${Date.now()}-user`,
-        role: 'user' as const,
-        content: message,
-        timestamp: new Date()
-      };
-
-      const assistantMessage = {
+      const newAssistantMessage: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
-        role: 'assistant' as const,
-        content: response,
-        timestamp: new Date()
+        role: 'assistant',
+        content: assistantResponseContent,
+        timestamp: new Date(),
       };
 
-      const newHistory = [
-        ...history,
-        userMessage,
-        assistantMessage
-      ];
+      setSessionData(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          chatHistory: [...(prev.chatHistory || []), newUserMessage, newAssistantMessage],
+          lastUpdated: new Date(),
+        };
+      });
 
-      setSessionData(prev => prev ? {
-        ...prev,
-        chatHistory: newHistory,
-        lastUpdated: new Date()
-      } : null);
-
-      return response;
+      return assistantResponseContent;
     } catch (error) {
       console.error('Error sending chat message:', error);
-      throw error;
+      toast.error('Failed to send chat message. Please try again.');
+      throw error; // Re-throw to be caught by caller if necessary
     }
   };
 
@@ -256,4 +266,4 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
       {children}
     </StudySessionContext.Provider>
   );
-}; 
+};
