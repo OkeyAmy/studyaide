@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 export const generateDetailedNotes = async (
@@ -32,9 +31,4 @@ export const generateDetailedNotes = async (
     toast.error('Failed to generate detailed notes. Please try again.');
     throw new Error('Detailed notes generation failed: ' + (error.message || 'Unknown error'));
   }
-};
-
-// Export noteService object for compatibility
-export const noteService = {
-  generateDetailedNotes
 };

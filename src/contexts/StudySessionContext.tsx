@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { StudySessionData, StudySessionContextType, ChatMessage } from '@/types/study-session';
+import { StudySessionData, StudySessionContextType } from '@/types/study-session';
 import { generateSummaryFromFile, generateSummary } from '@/services/summary.service';
 import { generateQuizFromFile, generateQuiz } from '@/services/quiz.service';
 import { generateMindmapFromFile, generateMindmap } from '@/services/mindmap.service';
@@ -26,6 +26,7 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
 
   const generateSummaryContent = async (): Promise<void> => {
+    // Prefer using the original uploaded file if available
     if (sessionData?.uploadedFile) {
       console.log('Using uploaded file for summary generation:', sessionData.uploadedFile.name);
       
@@ -68,6 +69,7 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
   };
 
   const generateQuizContent = async (): Promise<void> => {
+    // Prefer using the original uploaded file if available
     if (sessionData?.uploadedFile) {
       console.log('Using uploaded file for quiz generation:', sessionData.uploadedFile.name);
       
@@ -110,31 +112,42 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
   };
 
   const generateMindMapContent = async (): Promise<void> => {
+    // Prefer using the original uploaded file if available
     if (sessionData?.uploadedFile) {
       console.log('Using uploaded file for mind map generation:', sessionData.uploadedFile.name);
+      
       setIsGeneratingContent(true);
       try {
-        const mindMap = await generateMindmapFromFile(sessionData.uploadedFile, sessionData.id, sessionData.fileName);
-        setSessionData(prev => prev ? { ...prev, mindMap, lastUpdated: new Date() } : null);
+        const mindMap = await generateMindmapFromFile(sessionData.uploadedFile);
+        setSessionData(prev => prev ? {
+          ...prev,
+          mindMap,
+          lastUpdated: new Date()
+        } : null);
         toast.success('Mind map generated successfully from uploaded file!');
       } catch (error) {
         console.error('Error generating mind map from file:', error);
         toast.error('Failed to generate mind map from file. Please try again.');
       } finally {
         setIsGeneratingContent(false);
-      }
+    }
     } else if (sessionData?.polishedNote) {
       console.log('Fallback to text-based mind map generation');
-      setIsGeneratingContent(true);
-      try {
-        const mindMap = await generateMindmap(sessionData.polishedNote, sessionData.id, sessionData.fileName);
-        setSessionData(prev => prev ? { ...prev, mindMap, lastUpdated: new Date() } : null);
+
+    setIsGeneratingContent(true);
+    try {
+      const mindMap = await generateMindmap(sessionData.polishedNote);
+      setSessionData(prev => prev ? {
+        ...prev,
+        mindMap,
+        lastUpdated: new Date()
+      } : null);
         toast.success('Mind map generated successfully from text!');
-      } catch (error) {
+    } catch (error) {
         console.error('Error generating mind map from text:', error);
-        toast.error('Failed to generate mind map. Please try again.');
-      } finally {
-        setIsGeneratingContent(false);
+      toast.error('Failed to generate mind map. Please try again.');
+    } finally {
+      setIsGeneratingContent(false);
       }
     } else {
       toast.error('No file or note content available for mind map generation');
@@ -142,6 +155,7 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
   };
 
   const generateFlashcardsContent = async (): Promise<void> => {
+    // Prefer using the original uploaded file if available
     if (sessionData?.uploadedFile) {
       console.log('Using uploaded file for flashcard generation:', sessionData.uploadedFile.name);
       
@@ -183,37 +197,23 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
     }
   };
 
-  const sendChatMessage = async (messageContent: string): Promise<string> => {
-    if (!sessionData?.id || !sessionData.fileName || !sessionData.polishedNote) {
-      toast.error('Cannot send message: session data is incomplete.');
-      throw new Error('Session data (id, fileName, or polishedNote) is incomplete for chat.');
+  const sendChatMessage = async (message: string): Promise<string> => {
+    if (!sessionData?.polishedNote) {
+      throw new Error('No note context available for chat');
     }
 
-    const currentChatHistory: ChatMessage[] = sessionData.chatHistory || [];
-    
-    // Prepare messages for AI (current history + new user message)
-    // The chatbot service expects an array of { role, content }
-    const messagesForAI: { role: 'user' | 'assistant'; content: string }[] = [
-      ...currentChatHistory.map(msg => ({ role: msg.role, content: msg.content })),
-      { role: 'user' as const, content: messageContent }
-    ];
-
     try {
-      const response = await generateChatbotResponse(
-        sessionData.id,
-        messagesForAI,
-        sessionData.fileName,
-        sessionData.polishedNote
-      );
+      const history = sessionData.chatHistory || [];
+      const response = await generateChatbotResponse(message, sessionData.polishedNote);
       
-      const userMessageEntry: ChatMessage = {
+      const userMessage = {
         id: `msg-${Date.now()}-user`,
         role: 'user' as const,
-        content: messageContent,
+        content: message,
         timestamp: new Date()
       };
 
-      const assistantMessageEntry: ChatMessage = {
+      const assistantMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant' as const,
         content: response,
@@ -221,9 +221,9 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
       };
 
       const newHistory = [
-        ...currentChatHistory,
-        userMessageEntry,
-        assistantMessageEntry
+        ...history,
+        userMessage,
+        assistantMessage
       ];
 
       setSessionData(prev => prev ? {
@@ -235,7 +235,6 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
       return response;
     } catch (error) {
       console.error('Error sending chat message:', error);
-      toast.error('Failed to send chat message. Please try again.');
       throw error;
     }
   };
@@ -257,4 +256,4 @@ export const StudySessionProvider: React.FC<StudySessionProviderProps> = ({ chil
       {children}
     </StudySessionContext.Provider>
   );
-};
+}; 
