@@ -254,6 +254,7 @@ export type Database = {
           created_at: string | null
           features_used: string[] | null
           id: string
+          materials_data: Json | null
           status: string | null
           time_spent: number | null
           title: string
@@ -264,6 +265,7 @@ export type Database = {
           created_at?: string | null
           features_used?: string[] | null
           id?: string
+          materials_data?: Json | null
           status?: string | null
           time_spent?: number | null
           title: string
@@ -274,6 +276,7 @@ export type Database = {
           created_at?: string | null
           features_used?: string[] | null
           id?: string
+          materials_data?: Json | null
           status?: string | null
           time_spent?: number | null
           title?: string

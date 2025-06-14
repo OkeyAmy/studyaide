@@ -33,6 +33,7 @@ export interface Workflow {
   features_used: string[];
   created_at: string;
   updated_at: string;
+  materials_data?: Material[];
 }
 
 export interface WorkflowMaterial {

@@ -126,15 +126,10 @@ export const useWorkflowData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      // Get all workflows with materials
+      // Get all workflows
       const { data: workflows } = await supabase
         .from('workflows')
-        .select(`
-          *,
-          workflow_materials(
-            materials(*)
-          )
-        `)
+        .select(`*`)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -146,9 +141,8 @@ export const useWorkflowData = () => {
       const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
         id: w.id,
         title: w.title,
-        materials: w.workflow_materials
-          ?.map((wm: any) => (wm.materials ? toMaterialDisplay(wm.materials, true) : null))
-          .filter(Boolean) as MaterialDisplay[] || [],
+        materials: (w.materials_data || [])
+          .map((m: any) => toMaterialDisplay(m, true)) as MaterialDisplay[],
         featuresUsed: w.features_used || [],
         timeSpent: w.time_spent || 0,
         status: w.status as "active" | "paused" | "completed",
@@ -203,20 +197,33 @@ export const useCreateWorkflow = () => {
     mutationFn: async ({ title, materialIds = [] }: { title: string; materialIds?: string[] }) => {
       if (!user) throw new Error('User not authenticated');
 
-      // Create workflow
+      // Fetch material data if IDs are provided
+      let materialsData: any[] = [];
+      if (materialIds.length > 0) {
+        const { data: materials, error: fetchError } = await supabase
+          .from('materials')
+          .select('*')
+          .in('id', materialIds);
+
+        if (fetchError) throw fetchError;
+        materialsData = materials || [];
+      }
+
+      // Create workflow, including the materials_data
       const { data: workflow, error } = await supabase
         .from('workflows')
         .insert({
           user_id: user.id,
           title,
-          status: 'active'
+          status: 'active',
+          materials_data: materialsData,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Add materials to workflow if provided
+      // Add materials to workflow_materials join table if provided
       if (materialIds.length > 0) {
         const { error: materialsError } = await supabase
           .from('workflow_materials')
@@ -311,6 +318,36 @@ export const useAddMaterialToWorkflow = () => {
         throw new Error("Material is already in this workflow.");
       }
 
+      // Fetch material to be added
+      const { data: materialData, error: materialError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('id', materialId)
+        .single();
+      
+      if (materialError) throw materialError;
+      if (!materialData) throw new Error('Material to add not found');
+
+      // Fetch current workflow materials_data
+      const { data: workflowData, error: workflowError } = await supabase
+        .from('workflows')
+        .select('materials_data')
+        .eq('id', workflowId)
+        .single();
+      
+      if (workflowError) throw workflowError;
+      if (!workflowData) throw new Error('Workflow not found');
+
+      // Append new material data and update workflow
+      const newMaterialsData = [...(workflowData.materials_data || []), materialData];
+      const { error: updateError } = await supabase
+        .from('workflows')
+        .update({ materials_data: newMaterialsData })
+        .eq('id', workflowId);
+      
+      if (updateError) throw updateError;
+      
+      // Also insert into join table for consistency with other parts of the app
       const { data, error } = await supabase
         .from('workflow_materials')
         .insert({
