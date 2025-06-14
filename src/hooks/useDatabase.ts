@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateMaterialInput, MaterialDisplay } from '@/types/api';
-import { workflowAIService } from '@/services/workflow/ai.service';
 
 // Utility function to sanitize filename for storage
 function sanitizeFileName(fileName: string): string {
@@ -127,17 +126,10 @@ export const useWorkflowData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      // Get all workflows and their associated materials through the join table
+      // Get all workflows
       const { data: workflows } = await supabase
         .from('workflows')
-        .select(`
-          *,
-          workflow_materials (
-            materials (
-              *
-            )
-          )
-        `)
+        .select(`*`)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -146,18 +138,16 @@ export const useWorkflowData = () => {
       const completedWorkflows = workflows?.filter(w => w.status === 'completed').length || 0;
       const studyHours = workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0;
 
-      const recentWorkflowSessions = workflows?.slice(0, 10).map(w => {
-        const materials = w.workflow_materials.map((wm: any) => toMaterialDisplay(wm.materials, true));
-        return {
-          id: w.id,
-          title: w.title,
-          materials: materials,
-          featuresUsed: w.features_used || [],
-          timeSpent: w.time_spent || 0,
-          status: w.status as "active" | "paused" | "completed",
-          createdAt: w.created_at
-        };
-      }) || [];
+      const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
+        id: w.id,
+        title: w.title,
+        materials: (Array.isArray(w.materials_data) ? w.materials_data : [])
+          .map((m: any) => toMaterialDisplay(m, true)),
+        featuresUsed: w.features_used || [],
+        timeSpent: w.time_spent || 0,
+        status: w.status as "active" | "paused" | "completed",
+        createdAt: w.created_at
+      })) || [];
 
       return {
         totalWorkflows,
@@ -219,13 +209,14 @@ export const useCreateWorkflow = () => {
         materialsData = materials || [];
       }
 
-      // Create workflow, without the redundant materials_data
+      // Create workflow, including the materials_data
       const { data: workflow, error } = await supabase
         .from('workflows')
         .insert({
           user_id: user.id,
           title,
           status: 'active',
+          materials_data: materialsData,
         })
         .select()
         .single();
@@ -244,9 +235,6 @@ export const useCreateWorkflow = () => {
           );
 
         if (materialsError) throw materialsError;
-        
-        // Await AI processing
-        await workflowAIService.processWorkflowMaterials(materialsData);
       }
 
       // Log activity
@@ -340,7 +328,27 @@ export const useAddMaterialToWorkflow = () => {
       if (materialError) throw materialError;
       if (!materialData) throw new Error('Material to add not found');
 
-      // Insert into join table
+      // Fetch current workflow materials_data
+      const { data: workflowData, error: workflowError } = await supabase
+        .from('workflows')
+        .select('materials_data')
+        .eq('id', workflowId)
+        .single();
+      
+      if (workflowError) throw workflowError;
+      if (!workflowData) throw new Error('Workflow not found');
+      
+      const currentMaterials = Array.isArray(workflowData.materials_data) ? workflowData.materials_data : [];
+      // Append new material data and update workflow
+      const newMaterialsData = [...currentMaterials, materialData];
+      const { error: updateError } = await supabase
+        .from('workflows')
+        .update({ materials_data: newMaterialsData })
+        .eq('id', workflowId);
+      
+      if (updateError) throw updateError;
+      
+      // Also insert into join table for consistency with other parts of the app
       const { data, error } = await supabase
         .from('workflow_materials')
         .insert({
@@ -351,9 +359,6 @@ export const useAddMaterialToWorkflow = () => {
         .single();
 
       if (error) throw error;
-
-      // Await AI processing for the new material
-      await workflowAIService.generateAIContentForMaterial(materialData);
 
       await supabase.rpc('log_activity', {
         action_type: 'update',
