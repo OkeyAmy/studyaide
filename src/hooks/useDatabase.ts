@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { CreateMaterialInput, MaterialDisplay } from '@/types/api';
+import { CreateMaterialInput } from '@/types/api';
 
 // Utility function to sanitize filename for storage
 function sanitizeFileName(fileName: string): string {
@@ -31,18 +31,13 @@ export async function uploadFileToStorage(file: File, userId: string): Promise<s
     const fileName = `${userId}/${Date.now()}-${sanitizedFileName}`;
   
     // Use existing bucket name that matches your Supabase storage
-    const bucketName = 'study_materials'; // Make sure this bucket exists and has correct policies
+    const bucketName = 'study_materials';
     
   const { data, error } = await supabase.storage
       .from(bucketName)
       .upload(fileName, file);
   
   if (error) {
-    // Check if the error is due to bucket not found, and provide a more specific message
-    if (error.message.includes('Bucket not found')) {
-        console.error(`Storage bucket "${bucketName}" not found. Please ensure it's created in Supabase.`);
-        throw new Error(`Storage bucket "${bucketName}" not found. Please create it in your Supabase project.`);
-    }
     throw new Error(`Failed to upload file: ${error.message}`);
   }
   
@@ -68,29 +63,22 @@ export const useDashboardData = () => {
       if (!user) throw new Error('User not authenticated');
 
       // Get user stats
-      const { data: stats, error: statsError } = await supabase
+      const { data: stats } = await supabase
         .from('user_stats')
         .select('*')
         .eq('user_id', user.id)
         .single();
-      if (statsError && statsError.code !== 'PGRST116') { // PGRST116: 'Searched for a single row, but found no rows' (not an error for optional stats)
-        console.error('Error fetching user stats:', statsError);
-        // Decide if this should throw or return default/empty stats
-      }
 
       // Get active workflows count
-      const { count: activeWorkflows, error: workflowsError } = await supabase
+      const { count: activeWorkflows } = await supabase
         .from('workflows')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('status', 'active');
-      if (workflowsError) {
-          console.error('Error fetching active workflows count:', workflowsError);
-      }
 
       return {
         loginStreak: stats?.login_streak || 0,
-        timeSavedHours: stats?.total_study_time || 0, // Assuming total_study_time is in hours
+        timeSavedHours: stats?.total_study_time || 0,
         materialsProcessed: stats?.materials_processed || 0,
         activeWorkflows: activeWorkflows || 0
       };
@@ -109,50 +97,30 @@ export const useWorkflowData = () => {
       if (!user) throw new Error('User not authenticated');
 
       // Get all workflows with materials
-      const { data: workflows, error } = await supabase
+      const { data: workflows } = await supabase
         .from('workflows')
         .select(`
-          id,
-          title,
-          status,
-          time_spent,
-          features_used,
-          created_at,
+          *,
           workflow_materials(
             material_id,
-            materials(id, title) 
+            materials(id, title)
           )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching workflows:', error);
-        throw error; // Or handle more gracefully
-      }
-      
-      if (!workflows) return {
-        totalWorkflows: 0,
-        activeSessions: 0,
-        completedWorkflows: 0,
-        studyHours: 0,
-        recentWorkflowSessions: []
-      };
+      const totalWorkflows = workflows?.length || 0;
+      const activeSessions = workflows?.filter(w => w.status === 'active').length || 0;
+      const completedWorkflows = workflows?.filter(w => w.status === 'completed').length || 0;
+      const studyHours = workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0;
 
-      const totalWorkflows = workflows.length;
-      const activeSessions = workflows.filter(w => w.status === 'active').length;
-      const completedWorkflows = workflows.filter(w => w.status === 'completed').length;
-      // Ensure time_spent is treated as a number
-      const studyHours = workflows.reduce((acc, w) => acc + (Number(w.time_spent) || 0), 0);
-
-      const recentWorkflowSessions = workflows.slice(0, 10).map(w => ({
+      const recentWorkflowSessions = workflows?.slice(0, 10).map(w => ({
         id: w.id,
         title: w.title,
-        // Ensure materials are mapped correctly, accessing nested material title if needed
-        materials: w.workflow_materials?.map((wm: any) => wm.materials?.title || wm.material_id) || [],
+        materials: w.workflow_materials?.map((wm: any) => wm.material_id) || [],
         featuresUsed: w.features_used || [],
-        timeSpent: Number(w.time_spent) || 0,
-        status: w.status as "active" | "paused" | "completed", // Assuming status is one of these
+        timeSpent: w.time_spent || 0,
+        status: w.status as "active" | "paused" | "completed",
         createdAt: w.created_at
       })) || [];
 
@@ -177,7 +145,7 @@ export const useMaterialsData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data: materials, error } = await supabase
+      const { data: materials } = await supabase
         .from('materials')
         .select(`
           *,
@@ -185,54 +153,35 @@ export const useMaterialsData = () => {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching materials:', error);
-        throw error;
-      }
 
       return {
         totalItems: materials?.length || 0,
-        materials: materials?.map((m): MaterialDisplay => { // Ensure returned type is MaterialDisplay
-          let parsedContent: any = undefined;
+        materials: materials?.map(m => {
+          // Try to parse the content_summary as JSON if it exists
+          let parsedContent = undefined;
           if (m.content_summary) {
             try {
               parsedContent = JSON.parse(m.content_summary);
             } catch (e) {
+              // If it's not valid JSON, treat it as legacy plain text summary
               console.warn(`Failed to parse content_summary as JSON for material ${m.id}, treating as legacy text`);
               parsedContent = {
-                summary: m.content_summary,
+                summary: m.content_summary, // Use the plain text as summary
                 quiz: null,
                 mindMap: null,
                 flashcards: null,
-                polishedNote: m.content_summary // or m.raw_transcription or similar if available
+                polishedNote: m.content_summary
               };
             }
           }
-          
-          const status = (m.status === 'active' || m.status === 'archived') ? m.status : 'active';
 
           return {
-            id: m.id,
-            user_id: m.user_id,
-            title: m.title,
-            file_type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
-            file_url: m.file_url,
-            content_summary: m.content_summary,
-            raw_transcription: m.raw_transcription,
-            tags: m.tags || [],
-            status: status as "active" | "archived", // Correctly type status
-            study_time: m.study_time || 0,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-            // Properties for MaterialDisplay conformity based on typical structure
-            type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other", // duplicate but fine for now
+            ...m,
+            type: m.file_type as "pdf" | "docx" | "audio" | "video" | "other",
             studyTime: m.study_time || 0,
             usedInWorkflow: (m.workflow_materials?.length || 0) > 0,
-            uploadedAt: m.created_at, // duplicate but fine
-            parsedContent: parsedContent,
-            // These might be specific to MaterialDisplay and not directly on 'm'
-            // If MaterialDisplay has more fields, they need to be mapped here or made optional
+            uploadedAt: m.created_at,
+            parsedContent
           };
         }) || []
       };
@@ -256,7 +205,7 @@ export const useCreateWorkflow = () => {
         .insert({
           user_id: user.id,
           title,
-          status: 'active' // Default status for new workflow
+          status: 'active'
         })
         .select()
         .single();
@@ -265,49 +214,31 @@ export const useCreateWorkflow = () => {
 
       // Add materials to workflow if provided
       if (materialIds.length > 0) {
-        const workflowMaterials = materialIds.map(materialId => ({
-          workflow_id: workflow.id,
-          material_id: materialId,
-          user_id: user.id // Assuming workflow_materials also needs user_id for RLS
-        }));
-        
         const { error: materialsError } = await supabase
           .from('workflow_materials')
-          .insert(workflowMaterials);
+          .insert(
+            materialIds.map(materialId => ({
+              workflow_id: workflow.id,
+              material_id: materialId
+            }))
+          );
 
-        if (materialsError) {
-            // If workflow creation succeeded but adding materials failed,
-            // consider if the workflow should be deleted or if user should be notified to add manually.
-            // For now, throw the error.
-            console.error('Error adding materials to workflow:', materialsError);
-            throw materialsError;
-        }
+        if (materialsError) throw materialsError;
       }
 
       // Log activity
-      try {
-        await supabase.rpc('log_activity', {
-          p_user_id: user.id, // Ensure RPC parameters match definition
-          p_action_type: 'create',
-          p_entity_type: 'workflow',
-          p_entity_id: workflow.id,
-          p_details: { title, material_count: materialIds.length }
-        });
-      } catch (rpcError) {
-        console.warn('Failed to log activity for workflow creation:', rpcError);
-      }
-
+      await supabase.rpc('log_activity', {
+        action_type: 'create',
+        entity_type: 'workflow',
+        entity_id: workflow.id,
+        details: { title, material_count: materialIds.length }
+      });
 
       return workflow;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['materials', user?.id] }); // Invalidate materials too if workflow association is shown
-    },
-    onError: (error) => {
-        console.error('Error creating workflow:', error);
-        // Potentially show a toast message to the user
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     }
   });
 };
@@ -324,51 +255,30 @@ export const useCreateMaterial = () => {
       const { data: material, error } = await supabase
         .from('materials')
         .insert({
-          user_id: user.id, // Ensure user_id is explicitly set
-          title: materialData.title,
-          file_type: materialData.file_type,
-          file_url: materialData.file_url,
-          content_summary: materialData.content_summary,
-          raw_transcription: materialData.raw_transcription,
-          tags: materialData.tags || [],
-          status: materialData.status || 'active', // Default status
-          study_time: materialData.study_time || 0,
+          user_id: user.id,
+          ...materialData
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update user stats (ensure RPC exists and parameters are correct)
-      try {
-        await supabase.rpc('update_user_stats', { p_user_id: user.id });
-      } catch(rpcError) {
-        console.warn('Failed to update user stats after material creation:', rpcError);
-      }
-      
+      // Update user stats
+      await supabase.rpc('update_user_stats');
 
-      // Log activity (ensure RPC exists and parameters are correct)
-      try {
-        await supabase.rpc('log_activity', {
-          p_user_id: user.id,
-          p_action_type: 'create',
-          p_entity_type: 'material',
-          p_entity_id: material.id,
-          p_details: { title: materialData.title, file_type: materialData.file_type }
-        });
-      } catch (rpcError) {
-          console.warn('Failed to log activity for material creation:', rpcError);
-      }
-
+      // Log activity
+      await supabase.rpc('log_activity', {
+        action_type: 'create',
+        entity_type: 'material',
+        entity_id: material.id,
+        details: { title: materialData.title, file_type: materialData.file_type }
+      });
 
       return material;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['materials', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-    },
-    onError: (error) => {
-        console.error('Error creating material:', error);
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     }
   });
 };
@@ -385,84 +295,59 @@ export const useDeleteMaterial = () => {
       // First get the material to ensure user owns it and to get file_url for cleanup
       const { data: material, error: fetchError } = await supabase
         .from('materials')
-        .select('id, user_id, title, file_type, file_url') // Select only necessary fields
+        .select('*')
         .eq('id', materialId)
         .eq('user_id', user.id)
         .single();
 
-      if (fetchError) throw fetchError; // Could be "No rows found" which is fine if material doesn't exist or unauthorized
-      if (!material) throw new Error('Material not found or you do not have permission to delete it.');
-
+      if (fetchError) throw fetchError;
+      if (!material) throw new Error('Material not found or unauthorized');
 
       // Delete from workflow_materials table first (referential integrity)
-      // This assumes RLS allows this user to delete these entries.
-      const { error: workflowMaterialError } = await supabase
+      await supabase
         .from('workflow_materials')
         .delete()
         .eq('material_id', materialId);
-      
-      if (workflowMaterialError) {
-          console.error('Error deleting material from workflows:', workflowMaterialError);
-          throw workflowMaterialError; // Or handle more gracefully
-      }
-
 
       // Delete the material
       const { error } = await supabase
         .from('materials')
         .delete()
         .eq('id', materialId)
-        .eq('user_id', user.id); // Redundant user_id check if RLS is properly configured, but good for safety
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
       // Try to delete associated file from storage if it exists
       if (material.file_url) {
         try {
-          const bucketName = 'study_materials'; // Ensure this matches uploadFileToStorage
-          // Extract the file path part of the URL. Supabase public URLs are typically:
-          // https://<project-ref>.supabase.co/storage/v1/object/public/<bucket-name>/<user-id>/<timestamp>-<filename>
-          // We need the path starting from <user-id>/...
-          const urlParts = material.file_url.split('/');
-          const filePath = urlParts.slice(urlParts.indexOf(bucketName) + 1).join('/');
-          
-          if (filePath) {
-            const { error: storageErrorData } = await supabase.storage
+          const bucketName = 'study-files';
+          const fileName = material.file_url.split('/').pop();
+          if (fileName) {
+            await supabase.storage
               .from(bucketName)
-              .remove([filePath]); // Pass the full path within the bucket
-            if (storageErrorData) throw storageErrorData;
+              .remove([`${user.id}/${fileName}`]);
           }
-        } catch (storageError: any) {
-          console.warn(`Could not delete file ${material.file_url} from storage: ${storageError.message}`);
-          // Don't throw error for storage cleanup failure, but log it.
+        } catch (storageError) {
+          console.warn('Could not delete file from storage:', storageError);
+          // Don't throw error for storage cleanup failure
         }
       }
 
       // Log activity
-      try {
-        await supabase.rpc('log_activity', {
-          p_user_id: user.id,
-          p_action_type: 'delete',
-          p_entity_type: 'material',
-          p_entity_id: materialId, // Use materialId directly as entity_id
-          p_details: { title: material.title, file_type: material.file_type }
-        });
-      } catch(rpcError) {
-        console.warn('Failed to log activity for material deletion:', rpcError);
-      }
+      await supabase.rpc('log_activity', {
+        action_type: 'delete',
+        entity_type: 'material',
+        entity_id: materialId,
+        details: { title: material.title, file_type: material.file_type }
+      });
 
-
-      return material; // Return the deleted material object
+      return material;
     },
-    onSuccess: (data, variables) => { // variables = materialId
-      queryClient.invalidateQueries({ queryKey: ['materials', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['workflows', user?.id] }); // Workflows might have referenced this material
-      // Optionally, remove specific queries if needed, e.g., for the deleted material itself if cached individually
-      // queryClient.removeQueries({ queryKey: ['material', variables] }); 
-    },
-    onError: (error) => {
-        console.error('Error deleting material:', error);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
     }
   });
 };
@@ -476,17 +361,12 @@ export const useActivityLogs = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data: activities, error } = await supabase
-        .from('activity_logs') // Ensure this table exists and RLS is set up
+      const { data: activities } = await supabase
+        .from('activity_logs')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
-      
-      if (error) {
-          console.error('Error fetching activity logs:', error);
-          throw error;
-      }
 
       return activities || [];
     },
@@ -495,8 +375,6 @@ export const useActivityLogs = () => {
 };
 
 // Helper function to save study session to database
-// This function seems to be intended for inserting into a `study_sessions` table.
-// Ensure this table and the RPC function `insert_study_session` exist and are correctly defined.
 export const saveStudySessionToDb = async (sessionData: {
   userId: string;
   fileName: string;
@@ -506,38 +384,35 @@ export const saveStudySessionToDb = async (sessionData: {
   rawTranscription?: string;
   polishedNote?: string;
   aiSummary?: string;
-  aiQuiz?: any; // JSON or string
-  aiMindmap?: string; // Text or JSON string for Markmap
-  aiFlashcards?: any; // JSON array or string
+  aiQuiz?: any;
+  aiMindmap?: string;
+  aiFlashcards?: any;
   processingTimeMs?: number;
-  featuresGenerated?: string[]; // Array of strings
+  featuresGenerated?: string[];
 }) => {
-  // It's generally better to insert directly into tables with typed objects if possible,
-  // rather than relying on RPCs for simple inserts, unless the RPC does more (e.g., complex validation, related inserts).
-  // Assuming 'insert_study_session' RPC is preferred for now.
-  // Ensure parameter names match the RPC definition.
+  // For now, we'll directly insert using a raw SQL approach until the table types are updated
   const { data, error } = await supabase.rpc('insert_study_session', {
-    p_user_id: sessionData.userId, // Supabase RPCs often prefix params
-    p_file_name: sessionData.fileName,
-    p_file_type: sessionData.fileType,
-    p_file_size: sessionData.fileSize,
-    p_file_url: sessionData.fileUrl,
-    p_raw_transcription: sessionData.rawTranscription,
-    p_polished_note: sessionData.polishedNote,
-    p_ai_summary: sessionData.aiSummary,
-    p_ai_quiz: sessionData.aiQuiz,
-    p_ai_mindmap: sessionData.aiMindmap,
-    p_ai_flashcards: sessionData.aiFlashcards,
-    p_processing_time_ms: sessionData.processingTimeMs,
-    p_features_generated: sessionData.featuresGenerated,
-    p_status: 'completed', // Default status, or pass as param if variable
-    p_processing_completed_at: new Date().toISOString()
+    user_id: sessionData.userId,
+    file_name: sessionData.fileName,
+    file_type: sessionData.fileType,
+    file_size: sessionData.fileSize,
+    file_url: sessionData.fileUrl,
+    raw_transcription: sessionData.rawTranscription,
+    polished_note: sessionData.polishedNote,
+    ai_summary: sessionData.aiSummary,
+    ai_quiz: sessionData.aiQuiz,
+    ai_mindmap: sessionData.aiMindmap,
+    ai_flashcards: sessionData.aiFlashcards,
+    processing_time_ms: sessionData.processingTimeMs,
+    features_generated: sessionData.featuresGenerated,
+    status: 'completed',
+    processing_completed_at: new Date().toISOString()
   });
 
   if (error) {
-    console.error('Error saving study session via RPC:', error);
+    console.error('Error saving study session:', error);
     throw error;
   }
 
-  return data; // RPC might return the inserted row or a status
+  return data;
 };
