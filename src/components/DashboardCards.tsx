@@ -1,47 +1,55 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Mic, Brain, Clock, Target, Play } from "lucide-react";
+import { Upload, Mic, Brain, TrendingUp, Clock, Target, BookOpen } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import { useWorkflowData } from '@/hooks/useDatabase';
+import { useDashboardData } from '@/hooks/useDatabase';
 
 const DashboardCards = () => {
   const navigate = useNavigate();
-  const { data: workflowData, isLoading } = useWorkflowData();
+  const { data: dashboardData, isLoading } = useDashboardData();
 
   const handleStartSession = () => {
     navigate('/study-session');
   };
 
-  const quickStats = workflowData ? [
+  const quickStats = [
     {
-      title: "Total Workflows",
-      value: workflowData.totalWorkflows,
-      icon: Target,
-      color: "bg-orange-500",
-      trend: `+${workflowData.workflowsCreatedThisWeek} this week`
+      title: "Login Streak",
+      value: `${dashboardData?.loginStreak || 0} days`,
+      icon: TrendingUp,
+      color: "text-green-600",
+      bgColor: "bg-green-100"
     },
     {
-      title: "Active Sessions",
-      value: workflowData.activeSessions,
-      icon: Play,
-      color: "bg-green-500",
-      trend: "In progress"
-    },
-    {
-      title: "Study Hours",
-      value: `${workflowData.studyHours}h`,
+      title: "Time Saved",
+      value: `${dashboardData?.timeSavedHours || 0}h`,
       icon: Clock,
-      color: "bg-pink-500",
-      trend: "Total hours accumulated"
+      color: "text-blue-600",
+      bgColor: "bg-blue-100"
+    },
+    {
+      title: "Materials Processed",
+      value: dashboardData?.materialsProcessed || 0,
+      icon: Target,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100"
+    },
+    {
+      title: "Active Workflows",
+      value: dashboardData?.activeWorkflows || 0,
+      icon: BookOpen,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100"
     }
-  ] : [];
+  ];
 
   if (isLoading) {
     return <div className="animate-pulse space-y-6">
       <div className="h-32 bg-gray-200 rounded-xl"></div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>)}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>)}
       </div>
     </div>;
   }
@@ -78,22 +86,19 @@ const DashboardCards = () => {
       </Card>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
                   <div>
                     <p className="text-sm text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                    {stat.trend && (
-                      <p className="text-sm text-gray-500 mt-1">{stat.trend}</p>
-                    )}
-                  </div>
-                  <div className={`p-3 rounded-lg ${stat.color}`}>
-                    <Icon className="h-6 w-6 text-white" />
+                    <p className="text-lg font-semibold text-gray-900">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
