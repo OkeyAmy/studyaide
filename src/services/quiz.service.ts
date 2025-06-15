@@ -1,3 +1,4 @@
+
 import { 
     generateJSONResponse, 
     generateJSONResponseFromFile, 
@@ -7,8 +8,10 @@ import {
 
 export interface QuizQuestion {
     question: string;
-    answer: string;
+    answer?: string; // Made optional for compatibility with multiple-choice question types used elsewhere.
     explanation: string;
+    options?: string[];
+    correctAnswer?: string | number;
 }
 
 export interface Quiz {
