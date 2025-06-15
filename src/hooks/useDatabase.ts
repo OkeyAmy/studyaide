@@ -139,6 +139,10 @@ export const useWorkflowData = () => {
       const completedWorkflows = workflows?.filter(w => w.status === 'completed').length || 0;
       const studyHours = workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0;
 
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const workflowsCreatedThisWeek = workflows?.filter(w => new Date(w.created_at) > oneWeekAgo).length || 0;
+
       const recentWorkflowSessions = workflows?.slice(0, 10).map(w => {
         let materials: any[] = [];
         // Handle new object format and old array format for backwards compatibility
@@ -165,6 +169,7 @@ export const useWorkflowData = () => {
         activeSessions,
         completedWorkflows,
         studyHours,
+        workflowsCreatedThisWeek,
         recentWorkflowSessions
       };
     },
@@ -376,7 +381,7 @@ export const useAddMaterialToWorkflow = () => {
       
       if (materialError) throw materialError;
       if (!materialData) throw new Error('Material to add not found');
-
+      
       // Fetch current workflow data
       const { data: workflowData, error: workflowError } = await supabase
         .from('workflows')
