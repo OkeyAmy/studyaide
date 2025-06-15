@@ -1,9 +1,11 @@
-import { Brain, Sparkles, Target, TrendingUp, Clock, LucideIcon } from 'lucide-react';
+
+import { Brain, Sparkles, Target, TrendingUp, Clock } from 'lucide-react';
+import { ComponentType } from 'react';
 
 export interface Stat {
   label: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   color: string;
   trend: string;
   trendDirection: 'up' | 'down';
@@ -15,7 +17,7 @@ export interface AITool {
   description: string;
   usage: string;
   lastUsed: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   status: string;
   efficiency: string;
   accuracy: string;

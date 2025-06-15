@@ -7,7 +7,6 @@ import StatsGrid from '@/components/shared/StatsGrid';
 import SmartSummaryGenerator from '@/components/ai-tools/SmartSummaryGenerator';
 import AdaptiveFlashcardCreator from '@/components/ai-tools/AdaptiveFlashcardCreator';
 import QuizGenerator from '@/components/ai-tools/QuizGenerator';
-import LearningPathOptimizer from '@/components/ai-tools/LearningPathOptimizer';
 import { stats, aiTools, aiInsights } from '@/data/ai-tools-data';
 import AIToolsGrid from '@/components/ai-tools/AIToolsGrid';
 import AIInsightsSection from '@/components/ai-tools/AIInsightsSection';
@@ -18,7 +17,6 @@ const AITools = () => {
   const [showSummaryGenerator, setShowSummaryGenerator] = useState(false);
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
   const [showQuizGenerator, setShowQuizGenerator] = useState(false);
-  const [showLearningPathOptimizer, setShowLearningPathOptimizer] = useState(false);
 
   const handleLaunchTool = (toolId: number) => {
     if (toolId === 1) {
@@ -33,11 +31,6 @@ const AITools = () => {
     
     if (toolId === 3) {
       setShowQuizGenerator(true);
-      return;
-    }
-
-    if (toolId === 4) {
-      setShowLearningPathOptimizer(true);
       return;
     }
     
@@ -98,10 +91,6 @@ const AITools = () => {
       <QuizGenerator 
         isOpen={showQuizGenerator}
         onClose={() => setShowQuizGenerator(false)}
-      />
-      <LearningPathOptimizer
-        isOpen={showLearningPathOptimizer}
-        onClose={() => setShowLearningPathOptimizer(false)}
       />
     </AppLayout>
   );

@@ -198,93 +198,6 @@ Return ONLY the markdown text, no explanation or code blocks. Make it comprehens
 }
 
 /**
- * Generate learning path from uploaded file content using Gemini API
- */
-export async function generateLearningPathFromFile(
-    file: File,
-    regenerate: boolean = false
-): Promise<string> {
-    console.log(`${regenerate ? 'Regenerating' : 'Generating'} learning path from file:`, file.name);
-
-    try {
-        if (!isAIAvailable()) {
-            console.warn('AI not available, using fallback mindmap');
-            return generateFallbackMindmap(file.name);
-        }
-
-        console.log('Processing file for learning path generation...');
-        const fileData = await uploadFileToGemini(file);
-        console.log('File processed successfully for learning path');
-
-        const prompt = `### 🚀 Learning Path Optimizer Prompt
-
-You are an expert curriculum designer. Your task is to analyze the uploaded educational content and generate an optimized, step-by-step learning path. The output must be a **Markdown mindmap** that visually represents this path.
-
-### 📋 Guidelines:
-
-1.  **Analyze Content Deeply**: Identify foundational concepts, intermediate topics, and advanced subjects within the file.
-2.  **Logical Sequencing**: Structure the learning path logically. What should be learned first? What are the dependencies between topics?
-3.  **Markdown Mindmap Format**: Use Markdown hierarchy (\`#\`, \`##\`, \`-\`) to create a clear, nested mindmap.
-4.  **Structure**:
-    *   **Main Title**: \`# Learning Path for: ${file.name}\`
-    *   **Core Areas**: Use \`##\` for major sections like \`## 1. Foundational Concepts\`, \`## 2. Core Topics\`, \`## 3. Advanced Applications\`.
-    *   **Learning Steps**: Use \`-\` for specific topics or skills to learn within each area. Use indentation for sub-topics.
-    *   **Actionable Items**: Include nodes like \`💡 Key Idea\`, \`📝 Practice Exercise\`, or \`🔗 Connections\` to make the path practical.
-5.  **No Commentary**: Return ONLY the generated Markdown.
-
-### 📤 Uploaded File Analysis:
-File: "${file.name}"
-
-### ✅ Required Response Format (Example):
-
-# Learning Path for: ${file.name}
-
-## 1. Foundational Concepts (Getting Started)
-- Topic A: The Basics
-  - 💡 Key Idea: Understand the core principle.
-- Topic B: Prerequisite Skills
-  - 📝 Practice Exercise: Complete introductory exercises.
-
-## 2. Core Topics (Deep Dive)
-- Topic C: Building on the Basics
-  - 🔗 Connections: How Topic C relates to Topic A.
-- Topic D: Intermediate Concepts
-  - 💡 Key Idea: Grasp the main application.
-  - 📝 Practice Exercise: Solve intermediate problems.
-
-## 3. Advanced Applications (Mastery)
-- Topic E: Advanced Techniques
-- Topic F: Real-World Case Studies
-
-Return ONLY the markdown text. Make it a clear, actionable study guide.`;
-
-        console.log('Generating learning path from file content...');
-        const response = await generateContentFromFile(
-            fileData.base64Data,
-            fileData.mimeType,
-            prompt,
-            0.4
-        );
-
-        console.log('Learning path generated successfully from file');
-
-        let cleanedResult = response.trim().replace(/```markdown\s*/g, '').replace(/```/g, '');
-        if (!cleanedResult.startsWith('#')) {
-            cleanedResult = `# Learning Path for: ${file.name}\n\n${cleanedResult}`;
-        }
-        if (cleanedResult.split('\n').length < 3) {
-            throw new Error("Generated learning path is too short or malformed");
-        }
-        return cleanedResult;
-
-    } catch (error) {
-        console.error('Error generating learning path from file:', error);
-        console.warn('Falling back to default mindmap due to error');
-        return generateFallbackMindmap(file.name);
-    }
-}
-
-/**
  * Generates a mindmap from the note's text in markdown format for markmap.
  * @param noteText The polished text of the note.
  * @returns Markdown formatted text for markmap rendering.
@@ -391,6 +304,5 @@ export const mindmapService = {
     generateMindmap,
     generateMindmapFromFile,
     regenerateMindmapFromFile,
-    generateMindmapDataFromText,
-    generateLearningPathFromFile,
+    generateMindmapDataFromText
 };
