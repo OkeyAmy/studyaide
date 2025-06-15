@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
 import SmartSummaryGenerator from '@/components/ai-tools/SmartSummaryGenerator';
+import AdaptiveFlashcardCreator from '@/components/ai-tools/AdaptiveFlashcardCreator';
 
 const AITools = () => {
   const [selectedTool, setSelectedTool] = useState<number | null>(null);
   const [launchedTool, setLaunchedTool] = useState<number | null>(null);
   const [showSummaryGenerator, setShowSummaryGenerator] = useState(false);
+  const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
 
   const stats = [
     {
@@ -126,6 +128,12 @@ const AITools = () => {
     if (toolId === 1) {
       // Open Smart Summary Generator modal
       setShowSummaryGenerator(true);
+      return;
+    }
+    
+    if (toolId === 2) {
+      // Open Adaptive Flashcard Creator modal
+      setShowFlashcardCreator(true);
       return;
     }
     
@@ -282,6 +290,12 @@ const AITools = () => {
       <SmartSummaryGenerator 
         isOpen={showSummaryGenerator}
         onClose={() => setShowSummaryGenerator(false)}
+      />
+
+      {/* Adaptive Flashcard Creator Modal */}
+      <AdaptiveFlashcardCreator 
+        isOpen={showFlashcardCreator}
+        onClose={() => setShowFlashcardCreator(false)}
       />
     </AppLayout>
   );
