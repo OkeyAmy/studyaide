@@ -93,26 +93,25 @@ export const useDashboardData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Get user stats
+      const { data: stats } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      // Get all workflows for stats
-      const { data: workflows, error: workflowsError } = await supabase
+      // Get active workflows count
+      const { count: activeWorkflows } = await supabase
         .from('workflows')
-        .select('status, time_spent, created_at')
-        .eq('user_id', user.id);
-      
-      if (workflowsError) throw workflowsError;
-
-      const totalWorkflows = workflows?.length || 0;
-      const activeSessions = workflows?.filter(w => w.status === 'active').length || 0;
-      const studyHours = Math.round(workflows?.reduce((acc, w) => acc + (w.time_spent || 0), 0) || 0);
-      const newWorkflowsThisWeek = workflows?.filter(w => w.created_at > sevenDaysAgo).length || 0;
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
 
       return {
-        totalWorkflows,
-        newWorkflowsThisWeek,
-        activeSessions,
-        studyHours,
+        loginStreak: stats?.login_streak || 0,
+        timeSavedHours: stats?.total_study_time || 0,
+        materialsProcessed: stats?.materials_processed || 0,
+        activeWorkflows: activeWorkflows || 0
       };
     },
     enabled: !!user
