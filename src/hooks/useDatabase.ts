@@ -142,10 +142,11 @@ export const useWorkflowData = () => {
       const recentWorkflowSessions = workflows?.slice(0, 10).map(w => {
         let materials: any[] = [];
         // Handle new object format and old array format for backwards compatibility
-        if (w.materials_data && Array.isArray(w.materials_data.materials)) {
-          materials = w.materials_data.materials;
-        } else if (Array.isArray(w.materials_data)) {
-          materials = w.materials_data;
+        const materialsData = w.materials_data;
+        if (materialsData && typeof materialsData === 'object' && !Array.isArray(materialsData) && materialsData !== null && 'materials' in materialsData && Array.isArray((materialsData as any).materials)) {
+          materials = (materialsData as any).materials;
+        } else if (Array.isArray(materialsData)) {
+          materials = materialsData;
         }
         
         return {
@@ -268,7 +269,7 @@ export const useCreateWorkflow = () => {
             .update({
               features_used: ['summary', 'quiz', 'flashcards', 'mindmap'],
               materials_data: {
-                ...workflow.materials_data,
+                ...((typeof workflow.materials_data === 'object' && !Array.isArray(workflow.materials_data) && workflow.materials_data !== null) ? workflow.materials_data : {}),
                 ai_content: aiContent
               }
             })
@@ -386,12 +387,13 @@ export const useAddMaterialToWorkflow = () => {
       if (workflowError) throw workflowError;
       if (!workflowData) throw new Error('Workflow not found');
       
-      let currentMaterials = [];
-      if (workflowData.materials_data && Array.isArray(workflowData.materials_data.materials)) {
-        currentMaterials = workflowData.materials_data.materials;
-      } else if (Array.isArray(workflowData.materials_data)) {
+      let currentMaterials: any[] = [];
+      const materialsData = workflowData.materials_data;
+      if (materialsData && typeof materialsData === 'object' && !Array.isArray(materialsData) && materialsData !== null && 'materials' in materialsData && Array.isArray((materialsData as any).materials)) {
+        currentMaterials = (materialsData as any).materials;
+      } else if (Array.isArray(materialsData)) {
         // Backwards compatibility for old array format
-        currentMaterials = workflowData.materials_data;
+        currentMaterials = materialsData;
       }
       
       const newMaterialsList = [...currentMaterials, materialData];
@@ -416,7 +418,7 @@ export const useAddMaterialToWorkflow = () => {
         
         // Prepare new data object for workflow
         const newWorkflowDataObject = {
-          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data)) ? workflowData.materials_data : {}),
+          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data) && workflowData.materials_data !== null) ? workflowData.materials_data : {}),
           materials: newMaterialsList,
           ai_content: aiContent
         };
@@ -440,7 +442,7 @@ export const useAddMaterialToWorkflow = () => {
         
         // Still update workflow with the new material even if AI fails
         const newWorkflowDataObject = {
-          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data)) ? workflowData.materials_data : {}),
+          ...((typeof workflowData.materials_data === 'object' && !Array.isArray(workflowData.materials_data) && workflowData.materials_data !== null) ? workflowData.materials_data : {}),
           materials: newMaterialsList,
         };
         await supabase

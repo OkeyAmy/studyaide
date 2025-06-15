@@ -1,14 +1,45 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import WelcomeBanner from '@/components/WelcomeBanner';
 import DashboardCards from '@/components/DashboardCards';
 import { useActivityLogs } from '@/hooks/useDatabase';
 import { Clock, TrendingUp, Play, ArrowRight, Sparkles, Zap, BookOpen, Brain } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const { data: activities } = useActivityLogs();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const userStatsChannel = supabase
+      .channel('user_stats_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_stats',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('User stats changed, refetching dashboard data.', payload);
+          queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(userStatsChannel);
+    };
+  }, [user, queryClient]);
 
   const quickActions = [
     {
