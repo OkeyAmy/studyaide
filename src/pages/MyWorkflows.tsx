@@ -23,13 +23,40 @@ const MyWorkflows = () => {
   const { data: workflowData, isLoading: workflowsLoading } = useWorkflowData();
   const { data: materialData } = useMaterialsData();
 
+  // Calculate weekly trends
+  const getWeeklyTrend = (workflows: any[]) => {
+    if (!workflows || workflows.length === 0) return '+0 this week';
+    
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const weeklyCount = workflows.filter(w => 
+      new Date(w.createdAt) >= oneWeekAgo
+    ).length;
+    
+    return weeklyCount > 0 ? `+${weeklyCount} this week` : 'No new this week';
+  };
+
+  const getStudyHoursTrend = (workflows: any[]) => {
+    if (!workflows || workflows.length === 0) return '+0h this week';
+    
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const weeklyHours = workflows
+      .filter(w => new Date(w.createdAt) >= oneWeekAgo)
+      .reduce((acc, w) => acc + (w.timeSpent || 0), 0);
+    
+    return weeklyHours > 0 ? `+${weeklyHours}h this week` : '+0h this week';
+  };
+
   const stats = [
     {
       label: 'Total Workflows',
       value: workflowData?.totalWorkflows || 0,
       icon: Target,
       color: 'bg-gradient-to-r from-pulse-500 to-orange-600',
-      trend: '+2 this week',
+      trend: getWeeklyTrend(workflowData?.recentWorkflowSessions || []),
       trendDirection: 'up' as const
     },
     {
@@ -41,19 +68,11 @@ const MyWorkflows = () => {
       trendDirection: 'up' as const
     },
     {
-      label: 'Completed',
-      value: workflowData?.completedWorkflows || 0,
-      icon: TrendingUp,
-      color: 'bg-gradient-to-r from-purple-500 to-violet-600',
-      trend: 'This month',
-      trendDirection: 'up' as const
-    },
-    {
       label: 'Study Hours',
       value: `${workflowData?.studyHours || 0}h`,
       icon: Clock,
       color: 'bg-gradient-to-r from-pink-500 to-rose-600',
-      trend: '+8h this week',
+      trend: getStudyHoursTrend(workflowData?.recentWorkflowSessions || []),
       trendDirection: 'up' as const
     }
   ];
@@ -156,8 +175,8 @@ const MyWorkflows = () => {
               <div className="h-8 bg-white/60 rounded-2xl w-1/3 mb-2"></div>
               <div className="h-4 bg-white/40 rounded-xl w-1/4"></div>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white/60 rounded-3xl animate-pulse"></div>)}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {[1,2,3].map(i => <div key={i} className="h-32 bg-white/60 rounded-3xl animate-pulse"></div>)}
             </div>
           </div>
         </div>
@@ -232,7 +251,7 @@ const MyWorkflows = () => {
             </div>
           </div>
 
-          {/* Stats Overview */}
+          {/* Stats Overview - now with 3 cards instead of 4 */}
           <StatsGrid stats={stats} />
 
           {/* Workflows Grid */}
