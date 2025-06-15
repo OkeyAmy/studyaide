@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Brain, Sparkles, Zap, Target, TrendingUp, Clock, Play, Settings, MoreHorizontal } from 'lucide-react';
@@ -6,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
+import SmartSummaryGenerator from '@/components/ai-tools/SmartSummaryGenerator';
 
 const AITools = () => {
   const [selectedTool, setSelectedTool] = useState<number | null>(null);
   const [launchedTool, setLaunchedTool] = useState<number | null>(null);
+  const [showSummaryGenerator, setShowSummaryGenerator] = useState(false);
 
   const stats = [
     {
@@ -122,6 +123,12 @@ const AITools = () => {
   ];
 
   const handleLaunchTool = (toolId: number) => {
+    if (toolId === 1) {
+      // Open Smart Summary Generator modal
+      setShowSummaryGenerator(true);
+      return;
+    }
+    
     setLaunchedTool(toolId);
     setTimeout(() => {
       setLaunchedTool(null);
@@ -270,6 +277,12 @@ const AITools = () => {
           </div>
         </div>
       </div>
+
+      {/* Smart Summary Generator Modal */}
+      <SmartSummaryGenerator 
+        isOpen={showSummaryGenerator}
+        onClose={() => setShowSummaryGenerator(false)}
+      />
     </AppLayout>
   );
 };
