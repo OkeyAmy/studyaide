@@ -93,7 +93,6 @@ const AdaptiveFlashcardCreator: React.FC<AdaptiveFlashcardCreatorProps> = ({ isO
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 className="w-full h-20"
-                resize="none"
               />
             </div>
           </div>

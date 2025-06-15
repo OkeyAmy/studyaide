@@ -8,7 +8,8 @@ import SmartSummaryGenerator from '@/components/ai-tools/SmartSummaryGenerator';
 import AdaptiveFlashcardCreator from '@/components/ai-tools/AdaptiveFlashcardCreator';
 import QuizGenerator from '@/components/ai-tools/QuizGenerator';
 import LearningPathOptimizer from '@/components/ai-tools/LearningPathOptimizer';
-import { stats, aiTools, aiInsights } from '@/data/ai-tools-data';
+import { createStatsFromMetrics, createToolsFromMetrics, createInsightsFromMetrics } from '@/data/ai-tools-data';
+import { useAIToolsMetrics } from '@/hooks/useAIToolsMetrics';
 import AIToolsGrid from '@/components/ai-tools/AIToolsGrid';
 import AIInsightsSection from '@/components/ai-tools/AIInsightsSection';
 
@@ -19,6 +20,8 @@ const AITools = () => {
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
   const [showQuizGenerator, setShowQuizGenerator] = useState(false);
   const [showLearningPathOptimizer, setShowLearningPathOptimizer] = useState(false);
+
+  const { data: metrics, isLoading } = useAIToolsMetrics();
 
   const handleLaunchTool = (toolId: number) => {
     if (toolId === 1) {
@@ -47,6 +50,24 @@ const AITools = () => {
       alert(`AI Tool ${toolId} launched successfully!`);
     }, 2000);
   };
+
+  // Use real metrics or loading state
+  const stats = metrics ? createStatsFromMetrics(metrics) : [];
+  const aiTools = metrics ? createToolsFromMetrics(metrics) : [];
+  const aiInsights = metrics ? createInsightsFromMetrics(metrics) : [];
+
+  if (isLoading) {
+    return (
+      <AppLayout activeSession="ai-tools">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50 p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <span className="ml-2 text-gray-600">Loading AI Tools metrics...</span>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout activeSession="ai-tools">
