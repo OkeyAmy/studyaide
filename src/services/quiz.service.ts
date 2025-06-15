@@ -7,8 +7,7 @@ import {
 
 export interface QuizQuestion {
     question: string;
-    options: string[];
-    correctAnswer: number;
+    answer: string;
     explanation: string;
 }
 
@@ -26,17 +25,10 @@ function generateFallbackQuiz(identifier: string): Quiz {
     const title = `Quiz: ${identifier}`;
     const questions: QuizQuestion[] = [];
     
-    // Add a default question
     questions.push({
-        question: "What's the most effective way to study?",
-        options: [
-            "Cramming the night before",
-            "Passive re-reading",
-            "Active recall and spaced repetition",
-            "Highlighting text"
-        ],
-        correctAnswer: 2,
-        explanation: "Active testing through quizzes and concept review helps consolidate learning."
+        question: "What are the two core principles of effective learning discussed in many study guides?",
+        answer: "Active recall and spaced repetition.",
+        explanation: "Active recall involves actively retrieving information from memory, while spaced repetition involves reviewing information at increasing intervals. Both are proven to enhance long-term retention."
     });
     
     return { title, questions };
@@ -59,11 +51,9 @@ export async function generateQuizFromFile(
 
         console.log('Processing file for quiz generation...');
         
-        // Convert file to base64 for inline data
         const fileData = await uploadFileToGemini(file);
         console.log('File processed successfully for quiz');
 
-        // Create file-specific prompt based on file type
         let fileSpecificIntro = "";
         const fileType = file.type.toLowerCase();
         
@@ -81,35 +71,19 @@ Create quiz questions that test understanding of any educational content, diagra
 Create quiz questions that test understanding of the key concepts and information from this material.`;
         }
 
-        const prompt = `### ✅ Quiz Generation Prompt
+        const prompt = `### ✍️ Open-Ended Quiz Generation Prompt
 
-This is a detailed quiz generation system. You'll notice how organized it is. Use the uploaded file exactly as it is—preserving all structure, tone, and subject matter. Your task is to generate quiz questions **directly and only** from the material provided.
-
-Do **not** paraphrase, assume, or inject outside knowledge. Stay faithful to the source.
-Your response must be in **clean JSON format**, ready for direct use in a quiz engine.
+Your task is to create a set of open-ended quiz questions based on the provided document. These questions should test understanding and require a written answer, not multiple-choice selection.
 
 ### 📋 Guidelines:
 
-1. **Strictly Source-Based**:
-   Extract questions *only* from the provided file. Do not make assumptions or add filler content.
-
-2. **No Commentary or Explanation**:
-   Output only the quiz JSON. Do not explain your logic, insert notes, or use meta language.
-
-3. **Cultural & Linguistic Nuance**:
-   * Respect all dialects, mixed-language sections (e.g., Pidgin, Yoruba, Hausa, Igbo), and informal expressions
-   * Retain any cultural references or idiomatic context
-   * If content includes code, math, or technical info—retain formatting and syntax as-is
-
-4. **Question Variety**:
-   Include a **mix** of:
-   * Multiple choice questions (MCQs)
-   * True/False
-   * Fill-in-the-blank (optional, if relevant)
-   * Short answer
-
-5. **JSON Format Only**:
-   Structure your response in the format below. No markdown, no headers, no preamble.
+1.  **Source Fidelity**: Base all questions and answers **strictly** on the content of the uploaded file. Do not introduce external knowledge.
+2.  **Question Style**: Formulate clear, specific questions that prompt a concise, factual answer from the user. Avoid ambiguity.
+3.  **Answer & Explanation**:
+    *   Provide a correct, succinct \`answer\`.
+    *   Write a helpful \`explanation\` that clarifies why the answer is correct, providing context from the source material.
+4.  **No Commentary**: Your output must be **only** the clean JSON. Do not add any introductory text, markdown formatting, or notes.
+5.  **Content Nuance**: Preserve any cultural, linguistic, or technical nuances from the source document in your questions and answers.
 
 ### 📤 Uploaded File Analysis:
 File: "${file.name}"
@@ -118,31 +92,21 @@ Type: ${fileSpecificIntro}
 ### 📥 Required Response Format:
 
 {
-  "title": "Quiz: Neuroscience Fundamentals",
+  "title": "Quiz: Key Concepts from ${file.name}",
   "questions": [
     {
-      "type": "multiple-choice",
-      "question": "What does Hebbian learning state?",
-      "options": [
-        "Neurons that fire together wire together",
-        "Neurons work independently of each other",
-        "Learning only occurs during sleep",
-        "All neurons fire at the same rate"
-      ],
-      "correct": 0,
-      "explanation": "Hebbian learning is the principle that synaptic connections strengthen when neurons fire simultaneously."
+      "question": "What is the primary function of the mitochondria?",
+      "answer": "The primary function of mitochondria is to generate most of the cell's supply of adenosine triphosphate (ATP), used as a source of chemical energy.",
+      "explanation": "Mitochondria are often referred to as the 'powerhouses' of the cell because they are responsible for cellular respiration and energy production in the form of ATP."
     },
     {
-      "type": "true-false",
-      "question": "Neural plasticity only occurs in young brains.",
-      "options": ["True", "False"],
-      "correct": 1,
-      "explanation": "Neural plasticity continues throughout life, allowing for lifelong learning and adaptation."
+      "question": "Who wrote the play 'Hamlet'?",
+      "answer": "William Shakespeare",
+      "explanation": "William Shakespeare, an English playwright, poet, and actor, is widely regarded as the greatest writer in the English language and the world's pre-eminent dramatist. 'Hamlet' is one of his most famous tragedies."
     }
   ]
 }
 
-You must have a deep understanding of the content of the file to generate the quiz questions. and a give a detailed explanation for each question.
 Generate exactly 5 quiz questions based on the document content. Return ONLY valid JSON.`;
 
         console.log('Generating quiz from file content...');
@@ -165,23 +129,19 @@ Generate exactly 5 quiz questions based on the document content. Return ONLY val
             
             console.log('Quiz generated successfully from file');
 
-            // Ensure the result has the correct structure
             if (!response || !response.title || !response.questions || !Array.isArray(response.questions)) {
                 console.warn("Invalid quiz response format, using fallback");
                 return generateFallbackQuiz(file.name);
             }
             
-            // Validate that questions have required properties and map correct to correctAnswer
             const validQuestions = response.questions.filter((q: any) => 
-                q.question && q.options && Array.isArray(q.options) && 
-                q.options.length >= 2 && (typeof q.correct === 'number' || typeof q.correctAnswer === 'number') &&
-                (q.correct >= 0 || q.correctAnswer >= 0) && 
-                (q.correct < q.options.length || q.correctAnswer < q.options.length)
+                q.question && typeof q.question === 'string' &&
+                q.answer && typeof q.answer === 'string' &&
+                q.explanation && typeof q.explanation === 'string'
             ).map((q: any) => ({
-                ...q,
-                correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : q.correct,
-                // Remove the original correct property if it was mapped
-                correct: undefined
+                question: q.question,
+                answer: q.answer,
+                explanation: q.explanation,
             }));
             
             if (validQuestions.length === 0) {
@@ -191,7 +151,7 @@ Generate exactly 5 quiz questions based on the document content. Return ONLY val
             
             const quiz: Quiz = {
                 title: response.title || `Quiz - ${file.name}`,
-                questions: validQuestions.slice(0, 5) // Ensure max 5 questions
+                questions: validQuestions.slice(0, 5)
             };
 
             console.log(`Successfully generated ${quiz.questions.length} quiz questions`);
@@ -220,16 +180,15 @@ export async function generateQuiz(noteText: string): Promise<Quiz> {
         return generateFallbackQuiz('text-content');
     }
 
-    const prompt = `Create a multiple-choice quiz based on the following text. Generate 3-5 questions. Return ONLY valid JSON in this exact format:
+    const prompt = `Create an open-ended quiz based on the following text. Generate 3-5 questions. Each question should have a correct answer and an explanation. Return ONLY valid JSON in this exact format:
 
 {
   "title": "Quiz Title",
   "questions": [
     {
       "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
-      "explanation": "Why this answer is correct"
+      "answer": "Correct answer text.",
+      "explanation": "Why this answer is correct."
     }
   ]
 }
@@ -240,17 +199,15 @@ ${noteText}`;
     try {
         const result = await generateJSONResponse(prompt, 0.2);
         
-        // Ensure the result has the correct structure
         if (!result || !result.title || !result.questions || !Array.isArray(result.questions)) {
             console.warn("Invalid quiz response format, using fallback");
             return generateFallbackQuiz('text-content');
         }
         
-        // Validate that questions have required properties
         const validQuestions = result.questions.filter((q: any) => 
-            q.question && q.options && Array.isArray(q.options) && 
-            q.options.length >= 2 && typeof q.correctAnswer === 'number' &&
-            q.correctAnswer >= 0 && q.correctAnswer < q.options.length
+            q.question && typeof q.question === 'string' &&
+            q.answer && typeof q.answer === 'string' &&
+            q.explanation && typeof q.explanation === 'string'
         );
         
         if (validQuestions.length === 0) {
@@ -289,4 +246,4 @@ export const quizService = {
     regenerateQuiz,
     generateQuizFromFile,
     regenerateQuizFromFile
-}; 
+};

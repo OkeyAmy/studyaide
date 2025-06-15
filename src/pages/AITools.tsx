@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Brain, Sparkles, Zap, Target, TrendingUp, Clock, Play, Settings, MoreHorizontal } from 'lucide-react';
@@ -7,12 +8,14 @@ import StatsGrid from '@/components/shared/StatsGrid';
 import SessionCard from '@/components/shared/SessionCard';
 import SmartSummaryGenerator from '@/components/ai-tools/SmartSummaryGenerator';
 import AdaptiveFlashcardCreator from '@/components/ai-tools/AdaptiveFlashcardCreator';
+import QuizGenerator from '@/components/ai-tools/QuizGenerator';
 
 const AITools = () => {
   const [selectedTool, setSelectedTool] = useState<number | null>(null);
   const [launchedTool, setLaunchedTool] = useState<number | null>(null);
   const [showSummaryGenerator, setShowSummaryGenerator] = useState(false);
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
+  const [showQuizGenerator, setShowQuizGenerator] = useState(false);
 
   const stats = [
     {
@@ -134,6 +137,12 @@ const AITools = () => {
     if (toolId === 2) {
       // Open Adaptive Flashcard Creator modal
       setShowFlashcardCreator(true);
+      return;
+    }
+    
+    if (toolId === 3) {
+      // Open Quiz Generator modal
+      setShowQuizGenerator(true);
       return;
     }
     
@@ -296,6 +305,12 @@ const AITools = () => {
       <AdaptiveFlashcardCreator 
         isOpen={showFlashcardCreator}
         onClose={() => setShowFlashcardCreator(false)}
+      />
+
+      {/* Quiz Generator Modal */}
+      <QuizGenerator 
+        isOpen={showQuizGenerator}
+        onClose={() => setShowQuizGenerator(false)}
       />
     </AppLayout>
   );
