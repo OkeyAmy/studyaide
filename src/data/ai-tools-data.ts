@@ -1,11 +1,10 @@
-
 import { Brain, Sparkles, Target, TrendingUp, Clock } from 'lucide-react';
 import { ComponentType } from 'react';
 
 export interface Stat {
   label: string;
   value: string | number;
-  icon: ComponentType<{ className?: string }>;
+  icon: any;
   color: string;
   trend: string;
   trendDirection: 'up' | 'down';

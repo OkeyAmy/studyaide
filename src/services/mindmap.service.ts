@@ -198,6 +198,89 @@ Return ONLY the markdown text, no explanation or code blocks. Make it comprehens
 }
 
 /**
+ * Generate an optimized learning path from an uploaded file.
+ */
+export async function generateLearningPathFromFile(
+    file: File,
+    regenerate: boolean = false
+): Promise<string> {
+    console.log(`${regenerate ? 'Regenerating' : 'Generating'} learning path from file:`, file.name);
+    
+    try {
+        if (!isAIAvailable()) {
+            console.warn('AI not available, using fallback mindmap');
+            return generateFallbackMindmap(file.name);
+        }
+
+        const fileData = await uploadFileToGemini(file);
+
+        const prompt = `### ✅ Learning Path Optimizer Prompt
+
+You are an expert curriculum designer. Your task is to analyze the content of the uploaded file ("${file.name}") and generate an optimized, step-by-step learning path for a student.
+
+The output must be a **Markdown mindmap** that is structured, logical, and easy to follow.
+
+### 📋 Guidelines:
+
+1.  **Analyze Content**: Thoroughly analyze the uploaded document to understand its core topics, concepts, and overall structure.
+2.  **Hierarchical Structure**: Organize the learning path hierarchically. Start with fundamental/introductory concepts at the top level and progressively move to more advanced topics.
+3.  **Logical Flow**: The path should represent a logical sequence for learning the material effectively.
+4.  **Markdown Format**: Use Markdown headers (#, ##) and bullet points (-) to create the mind map structure.
+5.  **Key Sections**: The mindmap should include sections like:
+    *   `# Learning Path for ${file.name}` (Use a short, descriptive title)
+    *   `## ⛰️ Core Concepts (Start Here)`: Foundational knowledge.
+    *   `## 🗺️ Guided Learning Path`: The step-by-step path with main topics and sub-topics.
+    *   `## 🎯 Key Focus Areas`: Highlight the most critical topics for mastery.
+    *   `## 💡 Advanced Topics (Optional)`: Concepts for further exploration.
+6.  **No External Info**: Base the entire learning path ONLY on the content from the uploaded file.
+7.  **Return ONLY Markdown**: Your response should only be the Markdown content for the mindmap, with no extra explanations or text.
+
+### 📤 Required Response Format Example:
+
+# Learning Path for [Short File Name]
+
+## ⛰️ Core Concepts (Start Here)
+- Foundational Topic 1
+- Foundational Topic 2
+
+## 🗺️ Guided Learning Path
+- Step 1: Understand Topic A
+  - Sub-topic A.1
+  - Sub-topic A.2
+- Step 2: Explore Topic B
+  - Sub-topic B.1
+
+## 🎯 Key Focus Areas
+- Critical Concept X
+- Important Theory Y
+
+## 💡 Advanced Topics (Optional)
+- Further Reading on Z
+
+Return ONLY the markdown text.`;
+
+        const response = await generateContentFromFile(
+            fileData.base64Data,
+            fileData.mimeType,
+            prompt,
+            0.4
+        );
+        
+        let cleanedResult = response.trim().replace(/```markdown\s*/g, '').replace(/```/g, '');
+        if (!cleanedResult.startsWith('#')) {
+            cleanedResult = `# Learning Path - ${file.name}\n\n${cleanedResult}`;
+        }
+        
+        return cleanedResult;
+
+    } catch (error) {
+        console.error('Error generating learning path from file:', error);
+        toast.error("Failed to generate learning path. Please try again.");
+        return generateFallbackMindmap(file.name);
+    }
+}
+
+/**
  * Generates a mindmap from the note's text in markdown format for markmap.
  * @param noteText The polished text of the note.
  * @returns Markdown formatted text for markmap rendering.
@@ -304,5 +387,6 @@ export const mindmapService = {
     generateMindmap,
     generateMindmapFromFile,
     regenerateMindmapFromFile,
-    generateMindmapDataFromText
+    generateMindmapDataFromText,
+    generateLearningPathFromFile,
 };
